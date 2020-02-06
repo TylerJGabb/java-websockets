@@ -1,19 +1,15 @@
 package com.gabb.sb;
 
 
-import com.sun.corba.se.impl.legacy.connection.SocketFactoryConnectionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.SocketFactory;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -69,6 +65,8 @@ public class App {
 		 *      |                     Payload Data continued ...                |
 		 *      +---------------------------------------------------------------+
 		 */
+		
+		//Maybe DataInputStream?
 		new Thread(() -> {
 			//section 5.2
 			while (true)
@@ -102,26 +100,47 @@ public class App {
 					// 01111110 = 126  --> length is the 2 bytes after
 					String twobin = String.format("%8s", Integer.toBinaryString(two & 0XFF));
 
+					boolean payloadExtended = false;
+					boolean longPayload = false;
 					byte payloadMask = 0b01111111;
 					int payloadLen = (two & payloadMask);
 					if (payloadLen > 125) {
-						LOGGER.info("PAYLOAD LENGTH IS {} BYTES", payloadLen == 126 ? 2 : 8);
+						payloadExtended = true;
 						if (payloadLen == 126) {
 							//payload length is the next 16 bits (short)
-							payloadLen = (thr << 8) + (fou & 0XFF);
+							payloadLen = (thr << 8) | (fou & 0XFF);
 						} else {
+							longPayload = true;
 							// | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
 							//payload length is the next 64 bits (long)
 							payloadLen = 0;
 							for (int i = 2; i < 10; i++) {
-								payloadLen += (buf[i] << (9 - i));
+								//better practice to bitwise or to concatenate numbers
+								payloadLen |= (buf[i] << (9 - i)); 
 							}
 						}
 					}
 
 					LOGGER.info("PAYLOAD LENGTH IS {}", payloadLen);
+					
+					int nextByte = payloadExtended ? longPayload ? 10 : 4 : 2;
 
-					// now we have to read the masking key, the next 4 bytes after the payload length
+					byte[] mask = new byte[4];
+					if(masked == 1){
+						for(int i = 0; i < 4 ; i++ ){
+							int bufPos = i + nextByte;
+							mask[i] = buf[bufPos];
+						}
+						LOGGER.info("MASK IS PRESENT AND IS {}", ByteBuffer.wrap(mask).getInt());
+						nextByte += 4;
+					}
+					
+					for(int i = 0; i < payloadLen; i++){
+						byte key = mask[i % 4];
+						int decoded = buf[i + nextByte] ^ key;
+						System.out.print((char) decoded);
+					}
+					
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
