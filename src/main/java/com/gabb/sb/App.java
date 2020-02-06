@@ -71,51 +71,60 @@ public class App {
 		 */
 		new Thread(() -> {
 			//section 5.2
-			try {
-				int size = 256;
-				byte[] buf = new byte[size];
-				int offset = 0;
-				int readCount = in.read(buf, offset, size);
-				LOGGER.info("read {} bytes", readCount);
-				byte one = buf[0];
-				byte two = buf[1];
-				byte thr = buf[2];
-				byte fou = buf[3];
-				int fin = (one & 0b10000000) >> 7;
-				int rsv1 = (one & 0b01000000) >> 6;
-				int rsv2 = (one & 0b00100000) >> 5;
-				int rsv3 = (one & 0b00010000) >> 4;
-				int opcode = (one & 0b00001111);
-				int masked = (two & 0b10000000) >> 7;
+			while (true)
+				try {
+					int size = 256;
+					byte[] buf = new byte[size];
+					int offset = 0;
+					int readCount = in.read(buf, offset, size);
+					LOGGER.info("read {} bytes", readCount);
+					byte one = buf[0];
+					byte two = buf[1]; //why is this always 126...
+					//ANSWER: Its not, it only surpasses 126 when the payload length
+					// surpasses a number that can be represented by 2 bytes
+					byte thr = buf[2];
+					byte fou = buf[3];
+					int fin = (one & 0b10000000) >> 7;
+					int rsv1 = (one & 0b01000000) >> 6;
+					int rsv2 = (one & 0b00100000) >> 5;
+					int rsv3 = (one & 0b00010000) >> 4;
+					int opcode = (one & 0b00001111); //or 0XF
+					int masked = (two & 0b10000000) >> 7;
 
 
-				LOGGER.info("FIN={}", fin);
-				LOGGER.info("RSV 1,2,3 = {},{},{}", rsv1, rsv2, rsv3);
-				LOGGER.info("opcode = {}", opcode);
-				LOGGER.info("masked = {}", masked);
+					LOGGER.info("FIN={}", fin);
+					LOGGER.info("RSV 1,2,3 = {},{},{}", rsv1, rsv2, rsv3);
+					LOGGER.info("opcode = {}", opcode);
+					LOGGER.info("masked = {}", masked);
 
-				// now we need to get the payload length. by default this value is 7 bits
-				// 01111111 = 127  --> extended length is an additional 8 bytes
-				// 01111110 = 126  --> extended length is an additional 2 bytes 
-				int payloadLen = (two & 0b01111111);
-				if (payloadLen > 125) {
-					LOGGER.info("PAYLOAD LENGTH IS EXTENDED BY {} BYTES", payloadLen == 126 ? 2 : 8);
-					if (payloadLen == 126) {
-						//payload length is the next 23 bits (can fit inside int)
-						payloadLen = (payloadLen << 16) + (thr << 8) + fou;
-					} else {
-						//payload length is the next 71 bits 
-						LOGGER.error("EXTENDED PAYLOAD LENGTH NOT SUPPORTED YET");
-						client.close();
+					// now we need to get the payload length. by default this value is 7 bits
+					// 01111111 = 127  --> length is the 8 bytes after the initial payload length
+					// 01111110 = 126  --> length is the 2 bytes after
+					String twobin = String.format("%8s", Integer.toBinaryString(two & 0XFF));
+
+					byte payloadMask = 0b01111111;
+					int payloadLen = (two & payloadMask);
+					if (payloadLen > 125) {
+						LOGGER.info("PAYLOAD LENGTH IS {} BYTES", payloadLen == 126 ? 2 : 8);
+						if (payloadLen == 126) {
+							//payload length is the next 16 bits (short)
+							payloadLen = (thr << 8) + (fou & 0XFF);
+						} else {
+							// | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+							//payload length is the next 64 bits (long)
+							payloadLen = 0;
+							for (int i = 2; i < 10; i++) {
+								payloadLen += (buf[i] << (9 - i));
+							}
+						}
 					}
-				}
 
-				LOGGER.info("PAYLOAD LENGTH IS {}", payloadLen);
-				
-				// now we have to read the masking key, the next 4 bytes after the payload length
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+					LOGGER.info("PAYLOAD LENGTH IS {}", payloadLen);
+
+					// now we have to read the masking key, the next 4 bytes after the payload length
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 		}).start();
 
 	}
