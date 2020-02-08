@@ -4,16 +4,21 @@ package com.gabb.sb;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,6 +35,7 @@ public class App {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
 	public static final String UTF_8 = "UTF-8";
+	public static final byte[] TYLER = new byte[]{(byte) 0x81, 0x05, 0x74, 0x79, 0x6C, 0x65, 0x72};
 
 	public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
 		/**
@@ -65,88 +71,71 @@ public class App {
 		 *      |                     Payload Data continued ...                |
 		 *      +---------------------------------------------------------------+
 		 */
-		
-		//Maybe DataInputStream?
+
+		DataInputStream dataStream = new DataInputStream(in);
 		new Thread(() -> {
 			//section 5.2
-			while (true)
+			while (true) {
 				try {
-					int size = 256;
-					byte[] buf = new byte[size];
-					int offset = 0;
-					int readCount = in.read(buf, offset, size);
-					LOGGER.info("read {} bytes", readCount);
-					byte one = buf[0];
-					byte two = buf[1]; //why is this always 126...
-					//ANSWER: Its not, it only surpasses 126 when the payload length
-					// surpasses a number that can be represented by 2 bytes
-					byte thr = buf[2];
-					byte fou = buf[3];
-					int fin = (one & 0b10000000) >> 7;
-					int rsv1 = (one & 0b01000000) >> 6;
-					int rsv2 = (one & 0b00100000) >> 5;
-					int rsv3 = (one & 0b00010000) >> 4;
-					int opcode = (one & 0b00001111); //or 0XF
-					int masked = (two & 0b10000000) >> 7;
-
-
-					LOGGER.info("FIN={}", fin);
-					LOGGER.info("RSV 1,2,3 = {},{},{}", rsv1, rsv2, rsv3);
-					LOGGER.info("opcode = {}", opcode);
-					LOGGER.info("masked = {}", masked);
-
-					// now we need to get the payload length. by default this value is 7 bits
-					// 01111111 = 127  --> length is the 8 bytes after the initial payload length
-					// 01111110 = 126  --> length is the 2 bytes after
-					String twobin = String.format("%8s", Integer.toBinaryString(two & 0XFF));
-
-					boolean payloadExtended = false;
-					boolean longPayload = false;
-					byte payloadMask = 0b01111111;
-					int payloadLen = (two & payloadMask);
-					if (payloadLen > 125) {
-						payloadExtended = true;
-						if (payloadLen == 126) {
-							//payload length is the next 16 bits (short)
-							payloadLen = (thr << 8) | (fou & 0XFF);
-						} else {
-							longPayload = true;
-							// | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
-							//payload length is the next 64 bits (long)
-							payloadLen = 0;
-							for (int i = 2; i < 10; i++) {
-								//better practice to bitwise or to concatenate numbers
-								payloadLen |= (buf[i] << (9 - i)); 
-							}
+					byte finop = dataStream.readByte();
+					byte masklen = dataStream.readByte();
+					boolean fin = (finop & 0x80) > 0;
+					int opcode = finop & 0xF;
+					boolean masked = (masklen & 0x80) > 0;
+					//TODO: if not masked, fail the connection
+					byte len = (byte) (masklen & 0x7F);
+					LOGGER.info("FRAME HEADER: {}", String.format("%02x %02x", finop, masklen));
+					
+					boolean shortPayload = len ==  126;
+					boolean longPayload = len == 127;
+					long payloadLen = len;
+					if (shortPayload) {
+						//payload length is the next 16 bits (short)
+						payloadLen = (dataStream.readByte() << 8) | dataStream.readByte();
+					} else if (longPayload) {
+						payloadLen = 0;
+						//the payload length is the next 64 bits (long)
+						for (int i = 0; i < 8; i++) {
+							//better practice to bitwise or to concatenate numbers
+							payloadLen |= (dataStream.readByte() << (7 - i));
 						}
 					}
-
 					LOGGER.info("PAYLOAD LENGTH IS {}", payloadLen);
-					
-					int nextByte = payloadExtended ? longPayload ? 10 : 4 : 2;
+
 
 					byte[] mask = new byte[4];
-					if(masked == 1){
-						for(int i = 0; i < 4 ; i++ ){
-							int bufPos = i + nextByte;
-							mask[i] = buf[bufPos];
-						}
-						LOGGER.info("MASK IS PRESENT AND IS {}", ByteBuffer.wrap(mask).getInt());
-						nextByte += 4;
+					if (masked) {
+						dataStream.read(mask, 0, 4);
+						int maskVal = ByteBuffer.wrap(mask).getInt();
+						LOGGER.info("MASK IS PRESENT: 0x{} ({})", Integer.toHexString(maskVal), maskVal);
 					}
-					
-					for(int i = 0; i < payloadLen; i++){
+
+					StringBuilder payload = new StringBuilder();
+					for (int i = 0; i < payloadLen; i++) {
 						byte key = mask[i % 4];
-						int decoded = buf[i + nextByte] ^ key;
-						System.out.print((char) decoded);
+						byte decoded = (byte) (dataStream.readByte() ^ key);
+						payload.append((char) decoded);
 					}
-					
+					LOGGER.info("RECEIVED PAYLOAD:\n{}", payload);
+					out.write(TYLER);
+
 				} catch (IOException e) {
 					e.printStackTrace();
+				} finally {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 				}
+			}
 		}).start();
-
 	}
+	
+//	private byte[] buildUnmaskedFrame(String payload){
+//		List<Byte> frame = Arrays.asList((byte)0x81, (byte)0x8b);
+//		long len = payload.length();
+//	}
 
 	/**
 	 * HANDSHAKING
