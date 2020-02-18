@@ -2,14 +2,12 @@ package com.gabb.sb;
 
 
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.ServerWebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Writing a web socket
@@ -25,49 +23,24 @@ public class App {
 	static final Logger LOGGER = LoggerFactory.getLogger(App.class);
 
 	public static void main(String[] args) {
+		startWebSocketServer();
+	}
+
+	private static void startWebSocketServer() {
 		Vertx vertx = Vertx.vertx();
 		HttpServerOptions options = new HttpServerOptions().setLogActivity(false);
 		HttpServer server = vertx.createHttpServer(options);
 		//connections are accepted by default unless a custom handshaker is specified
 		server.websocketHandler(serverWebSocket -> {
-			PeriodicPinger periodicPinger = new PeriodicPinger(serverWebSocket);
-			AtomicInteger pongs = new AtomicInteger(1);
+			KeepAlive keepAlive = new KeepAlive(serverWebSocket, 1000).handleMissedPong(ServerWebSocket::close);
 			serverWebSocket.handler(buf -> {
 				LOGGER.info("handler received buffer containing '{}'. writing this back into the socket", buf.toString());
 				serverWebSocket.writeFinalTextFrame(buf.toString());
-			}).pongHandler(pong -> {
-				LOGGER.info("received pong");
-				serverWebSocket.writeFinalTextFrame("received pongs = " + pongs.getAndIncrement());
-			}).closeHandler(closeHandler -> periodicPinger.interrupt())
+			}).closeHandler(closeHandler -> keepAlive.interrupt())
 			.writeFinalTextFrame("I See You!");
-			periodicPinger.start();
-		}).listen(8080, "172.16.11.139");
+			keepAlive.start();
+		}).listen(8080, "172.16.11.96");
+		LOGGER.info("Listening on ...");
 	}
 }
 
-class PeriodicPinger extends Thread {
-
-	private ServerWebSocket socket;
-
-	private PeriodicPinger() {
-	}
-
-	public PeriodicPinger(ServerWebSocket socket) {
-		this.socket = socket;
-	}
-
-	@Override
-	public void run() {
-		App.LOGGER.info("PeriodicPinger started for {}", socket);
-		while (!isInterrupted()) try {
-			Thread.sleep(5000);
-			System.out.println("SENDING PING TO " + socket.path());
-			socket.writePing(Buffer.buffer());
-		} catch (InterruptedException e) {
-			interrupt();
-			App.LOGGER.info("PeriodicPinger interrupted for {}", socket);
-			return;
-		}
-		App.LOGGER.info("PeriodicPinger expired for {}", socket);
-	}
-}
