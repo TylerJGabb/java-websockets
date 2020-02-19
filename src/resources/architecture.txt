@@ -9,7 +9,7 @@ Resolver:
             - we could maintain a map of byte -> Class<? extends Message> or someting like this... Message could be an abstract
             that will lay some groundrules for what each message must contain...
             
-            -
+            - not sure I 100% like the idea, but the resolver could hold this map
             
 KeepAlive:
     - A class responsible for managing/observing the quality of a socket connection
