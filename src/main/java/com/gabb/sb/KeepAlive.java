@@ -3,7 +3,6 @@ package com.gabb.sb;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.ServerWebSocket;
-import io.vertx.core.net.SocketAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +67,7 @@ class KeepAlive extends Thread {
 		logger.info("KeepAlive started");
 		while (!isInterrupted()) try {
 			Thread.sleep(period);
-			if (checkLastPong()) break;
+			if (isPongOverdue() && onOverduePong()) break;
 			logger.info("sending ping");
 			socket.writePing(Buffer.buffer());
 		} catch (InterruptedException e) {
@@ -83,21 +82,26 @@ class KeepAlive extends Thread {
 		logger.info("KeepAlive expired");
 	}
 
-	private boolean checkLastPong() {
+	private boolean onOverduePong() {
+		if (overduePongHandler != null) {
+			logger.warn("invoking overduePongHandler...");
+			//TODO: visit possibility of passing in "instructions" to be set by the caller
+			//then interpreted on this end to tell whether or not to continue
+			if(this.overduePongHandler.apply(socket)) {
+				logger.warn("overduePongHandler applied and returned true, meaning I should stop. killing myself");
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean isPongOverdue() {
 		if (lastPongRecieved > 0) {
 			long millisPassedSinceLastPong = Instant.now().toEpochMilli() - lastPongRecieved;
 			long overduePercentage = 100 * Math.abs(period - millisPassedSinceLastPong) / period;
 			if (overduePercentage > OVERDUE_PONG_PERCENTAGE_LIMIT) {
 				logger.warn("pong is overdue by {}%", overduePercentage);
-				if (overduePongHandler != null) {
-					logger.warn("invoking overduePongHandler...");
-					//TODO: visit possibility of passing in "instructions" to be set by the caller
-					//then interpreted on this end to tell whether or not to continue
-					if(this.overduePongHandler.apply(socket)) {
-						logger.warn("overduePongHandler applied and returned true, meaning I should stop. killing myself");
-						return true;
-					}
-				}
+				return true;
 			}
 		}
 		return false;
