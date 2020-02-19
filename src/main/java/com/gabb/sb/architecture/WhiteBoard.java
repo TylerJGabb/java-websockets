@@ -4,49 +4,56 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 
 public final class WhiteBoard {
 
+	private static PayloadBrokerBase cBroker;
+
 	public static void main(String[] args) throws IOException {
-		IResolver resolver = new ResolverBase() {};
-		resolver.registerTypeCode(0x01,  Message.class);
-		resolver.registerTypeCode(0x02, FooBar.class);
-		IPayload payload = new Message(1);
-		Buffer buf = Buffer.buffer();
-		buf.appendInt(0x01);
-		String encoded = Json.encode(payload);
-		buf.appendString(encoded);
-		IPayload recieved = resolver.resolve(buf);
+		IResolver resolver = new ResolverImpl();
+		resolver.registerType(Message.class);
+		resolver.registerType(FooBar.class);
+		IPayload meessage = new Message(1);
+		IPayload foobar = new FooBar("Tyler");
+		Buffer mesBuf = wrapInBuffer(meessage);
+		Buffer fooBuf = wrapInBuffer(foobar);
+		IPayload recieved = resolver.resolve(mesBuf);
 		brokerTest(recieved);
+		recieved = resolver.resolve(fooBuf);
+		brokerTest(recieved);
+		
+	}
+
+	private static Buffer wrapInBuffer(IPayload aPayload) {
+		Buffer buf = Buffer.buffer();
+		int code = aPayload.getClass().hashCode();
+		buf.appendInt(code);
+		String encoded = Json.encode(aPayload);
+		buf.appendString(encoded);
+		return buf;
 	}
 
 	private static void brokerTest(IPayload payload) {
 		ListenerBase<Message> messageListener = new ListenerBase<Message>() {
 			@Override
 			public void consume(Message payload) {
-				System.out.println("Got Message");
+				System.out.println("Got Message containing " + payload.foo);
 			}
 		};
-		System.out.println(messageListener.acceptedPayload());
 
 		IListener<FooBar> fooListener = new ListenerBase<FooBar>(){
 
 			@Override
 			public void consume(FooBar payload) {
-				System.out.println("Got FooBar");
+				System.out.println("Got Foobar containing " + payload.bar);
 			}
 		};
-		System.out.println(fooListener.acceptedPayload());
 
-		PayloadBrokerBase broker = new PayloadBrokerBase(){};
-		broker.registerListener(messageListener);
-		broker.registerListener(fooListener);
-//		broker.delegate(new Message(2));
-//		broker.delegate(new FooBar());
-		broker.delegate(payload);
+		cBroker = new PayloadBrokerBase(){};
+		cBroker.registerListener(messageListener);
+		cBroker.registerListener(fooListener);
+		cBroker.delegate(payload);
 	}
 }
 
@@ -64,9 +71,16 @@ class Message implements IPayload{
 }
 
 class FooBar implements  IPayload{
-	
+
+	public FooBar() {
+	}
+
+	public FooBar(String aBar) {
+		bar = aBar;
+	}
+
 	@JsonProperty
-	int bar;
+	String bar;
 	
 }
 

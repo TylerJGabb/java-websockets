@@ -9,6 +9,13 @@ public interface IResolver {
 	
 	IPayload resolve(Buffer buf);
 
-	void registerTypeCode(int aCode, Class<? extends IPayload> clazz);
+	/**
+	 * registers a type with this resolver, making it capable of resolving
+	 * Payloads of that type. If you try to resolve a Payload that is of a type
+	 * not registered, it will not be resolved
+	 * @param clazz
+	 * @return true if type was already registered
+	 */
+	boolean registerType(Class<? extends IPayload> clazz);
 	
 }
