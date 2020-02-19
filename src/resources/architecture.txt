@@ -1,0 +1,42 @@
+Resolver:
+    - A class capable of resolving raw binary data in a payload into a POJO equivalent
+    - may not need this if guaranteed to be sending messages via json
+    - cons: maintaining a collection/mapping of operations and may eventually lead to excessive switch-case
+        - how to solve switch-case? the incoming message flow would be as follows
+        
+            bytes -> resolver (extracts message type T) -> generic json parser <T>(remainingpayload) -> TImpl -> ListenerCaller -> ...
+            
+            - we could maintain a map of byte -> Class<? extends Message> or someting like this... Message could be an abstract
+            that will lay some groundrules for what each message must contain...
+            
+            -
+            
+KeepAlive:
+    - A class responsible for managing/observing the quality of a socket connection
+    - Currently implemented in a way that just pings regularly and checks when the last pong was recieved
+    - Might be able to send a ping and block while waiting for pong, and can use timeout. but this opens the door
+    to the possibility of a rogue pong, so this is why we would send with a random hash into the ping, since the
+    protocol states that a ping's payload must be send back in a pong. So if we send AFF15F5E then we must recieve AFF15F5E
+    this could be used to ignore rogue pongs... I like this idea a bit better. We could use semaphore...
+    
+    - I like the idea of events here, where if something abnormal happens a list of listeners are invoked, (to block or not to block?)
+    this removes the responsibility of handling abnormal events from this class, and allows it to be passed to someone else!
+    
+    
+Listener:
+    - A class that holds a type, indicating which kinds of POJO's it is able to process. Defines some code 
+    on how to consume that payload
+    
+ListenerCaller:
+    - Holds a list of Listeners, and when it recieves a Timpl, distributes that to the listeners registered to be able
+    to process TImpl, Responsibility of further processing the Message is handed to the Listener's consume method
+    
+    
+    
+ServerSide vs ClientSide
+
+
+    
+
+            
+        
