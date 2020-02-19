@@ -1,12 +1,14 @@
 package com.gabb.sb;
 
 
+import ch.qos.logback.classic.Level;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
-import io.vertx.core.http.HttpServerOptions;
-import io.vertx.core.http.ServerWebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
+import java.util.List;
 
 
 /**
@@ -21,26 +23,49 @@ import org.slf4j.LoggerFactory;
 public class App {
 
 	static final Logger LOGGER = LoggerFactory.getLogger(App.class);
+	public static final String HOST = "172.16.11.96";
+	public static final int PORT = 8080;
 
 	public static void main(String[] args) {
+		configureLoggersProgrammatically(Level.INFO);
 		startWebSocketServer();
+	}
+
+	private static void configureLoggersProgrammatically(Level aLevel) {
+		List<String> loggersNamedByPackage = Arrays.asList(
+				"io.netty.handler.codec.http.websocketx",
+				"io.netty.buffer",
+				"io.netty.util.internal",
+				"io.netty.util",
+				"io.netty.channel",
+				"io.netty.resolver.dns"
+		);
+		
+		for (String mPackage : loggersNamedByPackage) {
+			((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(mPackage)).setLevel(aLevel);
+		}
 	}
 
 	private static void startWebSocketServer() {
 		Vertx vertx = Vertx.vertx();
-		HttpServerOptions options = new HttpServerOptions().setLogActivity(false);
-		HttpServer server = vertx.createHttpServer(options);
+		HttpServer server = vertx.createHttpServer();
 		//connections are accepted by default unless a custom handshaker is specified
 		server.websocketHandler(serverWebSocket -> {
-			KeepAlive keepAlive = new KeepAlive(serverWebSocket, 1000).handleMissedPong(ServerWebSocket::close);
+			KeepAlive keepAlive = new KeepAlive(serverWebSocket, 50).handleOverduePong(s -> {
+				s.close();
+				return true; //stop the keepalive
+			});
 			serverWebSocket.handler(buf -> {
-				LOGGER.info("handler received buffer containing '{}'. writing this back into the socket", buf.toString());
-				serverWebSocket.writeFinalTextFrame(buf.toString());
+				if(buf.length() == 0){
+					LOGGER.trace("received empty payload from {}, ignoring...", serverWebSocket.remoteAddress());
+					return;
+				}
+				LOGGER.info("handler received buffer containing '{}'", buf.toString());
 			}).closeHandler(closeHandler -> keepAlive.interrupt())
 			.writeFinalTextFrame("I See You!");
 			keepAlive.start();
-		}).listen(8080, "172.16.11.96");
-		LOGGER.info("Listening on ...");
+		}).listen(PORT, HOST);
+		LOGGER.info("Listening on {}:{}", HOST, server.actualPort());
 	}
 }
 

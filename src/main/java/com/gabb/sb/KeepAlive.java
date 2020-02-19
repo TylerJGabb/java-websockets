@@ -3,30 +3,33 @@ package com.gabb.sb;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.ServerWebSocket;
+import io.vertx.core.net.SocketAddress;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-
-import static com.gabb.sb.App.LOGGER;
+import java.util.function.Function;
 
 class KeepAlive extends Thread {
 
 	public static final int DEFAULT_PERIOD = 5000;
-	private final String id;
+	public static final int OVERDUE_PONG_PERCENTAGE_LIMIT = 50;
 
 	private long lastPongRecieved = 0;
 	private int period;
-	private ServerWebSocket socket;
-	private Handler<ServerWebSocket> missedPongHandler;
+	private final ServerWebSocket socket;
+	private Function<ServerWebSocket, Boolean> overduePongHandler;
+	private final Logger logger;
 
-
-	public KeepAlive(ServerWebSocket socket){
-		this.id = Integer.toHexString(socket.hashCode()) + "-" + socket.remoteAddress();
+	public KeepAlive(ServerWebSocket socket) {
+		super("KeepAlive for " + socket.remoteAddress());
+		logger = LoggerFactory.getLogger(this.getClass());
 		this.period = DEFAULT_PERIOD;
-		this.socket = socket;
-		this.socket.pongHandler(pong -> {
-			LOGGER.info("{} received pong", this.id);
+		socket.pongHandler(pong -> {
+			logger.info("received pong from {}", socket.remoteAddress());
 			this.lastPongRecieved = Instant.now().toEpochMilli();
 		});
+		this.socket = socket;
 	}
 
 	public KeepAlive(ServerWebSocket socket, int period) {
@@ -34,36 +37,70 @@ class KeepAlive extends Thread {
 		this.period = period;
 	}
 	
-	public KeepAlive handleMissedPong(Handler<ServerWebSocket> handler){
-		this.missedPongHandler = handler;
+	//TODO: extract to functional interface
+
+	/**
+	 * A function that takes a ServerWebSocket and returns whether or not to 
+	 * kill this KeepAlive
+	 * @param handler
+	 * @return
+	 */
+	public KeepAlive handleOverduePong(Function<ServerWebSocket, Boolean> handler) {
+		this.overduePongHandler = handler;
 		return this;
 	}
 
+	/**
+	 * Handles the Overdue Pong and allows the KeepAlive to continue processing
+	 * @param handler
+	 * @return
+	 */
+	public KeepAlive handleOverduePong(Handler<ServerWebSocket> handler){
+		this.overduePongHandler = s -> {
+			handler.handle(s);
+			return false;
+		};
+		return this;
+	}
+	
 	@Override
 	public void run() {
-		LOGGER.info("KeepAlive started for {}", id);
+		logger.info("KeepAlive started");
 		while (!isInterrupted()) try {
 			Thread.sleep(period);
-			if(lastPongRecieved > 0){
-				long millisPassedSinceLastPong = Instant.now().toEpochMilli() - lastPongRecieved;
-				long expectedPongPeriodDiffPercentage = 100 * Math.abs(period - millisPassedSinceLastPong) / period;
-				if(expectedPongPeriodDiffPercentage > 50){
-					LOGGER.warn("Missed Pong for {}", id);
-					if(missedPongHandler != null) missedPongHandler.handle(socket);
-				}
-			}
-			LOGGER.info("KeepAlive Pinging {}", id);
+			if (checkLastPong()) break;
+			logger.info("sending ping");
 			socket.writePing(Buffer.buffer());
 		} catch (InterruptedException e) {
 			interrupt();
-			LOGGER.info("KeepAlive interrupted for {}", id);
+			logger.info("KeepAlive interrupted");
+			break;
+		} catch (Exception e){
+			interrupt();
+			logger.error("encountered unexpected Exception", e);
 			break;
 		}
-		LOGGER.info("KeepAlive expired for {}", id);
+		logger.info("KeepAlive expired");
 	}
 
-	private String id() {
-		return this.id;
+	private boolean checkLastPong() {
+		if (lastPongRecieved > 0) {
+			long millisPassedSinceLastPong = Instant.now().toEpochMilli() - lastPongRecieved;
+			long overduePercentage = 100 * Math.abs(period - millisPassedSinceLastPong) / period;
+			if (overduePercentage > OVERDUE_PONG_PERCENTAGE_LIMIT) {
+				logger.warn("pong is overdue by {}%", overduePercentage);
+				if (overduePongHandler != null) {
+					logger.warn("invoking overduePongHandler...");
+					//TODO: visit possibility of passing in "instructions" to be set by the caller
+					//then interpreted on this end to tell whether or not to continue
+					if(this.overduePongHandler.apply(socket)) {
+						logger.warn("overduePongHandler applied and returned true, meaning I should stop. killing myself");
+						return true;
+					}
+				}
+			}
+		}
+		return false;
 	}
 
 	public ServerWebSocket getSocket() {
