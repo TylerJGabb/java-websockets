@@ -2,11 +2,15 @@ package com.gabb.sb;
 
 
 import ch.qos.logback.classic.Level;
+import com.gabb.sb.architecture.FooBar;
+import com.gabb.sb.architecture.IPayload;
+import com.gabb.sb.architecture.IResolver;
+import com.gabb.sb.architecture.JsonResolver;
+import com.gabb.sb.architecture.Message;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.plugin2.message.Message;
 
 import java.util.Arrays;
 import java.util.List;
@@ -32,7 +36,7 @@ public class App {
 		startWebSocketServer();
 	}
 
-	private static void configureLoggersProgrammatically(Level aLevel) {
+	public static void configureLoggersProgrammatically(Level aLevel) {
 		List<String> loggersNamedByPackage = Arrays.asList(
 				"io.netty.handler.codec.http.websocketx",
 				"io.netty.buffer",
@@ -50,6 +54,7 @@ public class App {
 	private static void startWebSocketServer() {
 		Vertx vertx = Vertx.vertx();
 		HttpServer server = vertx.createHttpServer();
+		IResolver resolver = buildResolver();
 		//connections are accepted by default unless a custom handshaker is specified
 		server.websocketHandler(serverWebSocket -> {
 			KeepAlive keepAlive = new KeepAlive(serverWebSocket).handleOverduePong(s -> {
@@ -61,12 +66,27 @@ public class App {
 					LOGGER.trace("received empty payload from {}, ignoring...", serverWebSocket.remoteAddress());
 					return;
 				}
+
+				IPayload payload = resolver.resolve(buf);
+				if(payload == null){
+					LOGGER.error("Unable to resolve payload " + buf);
+				} else {
+					LOGGER.info("Resolved payload " + payload.getClass());
+				}
+				
 				LOGGER.info("handler received buffer containing '{}'", buf.toString());
 			}).closeHandler(closeHandler -> keepAlive.interrupt())
 					.writeFinalTextFrame("I See You!");
 			keepAlive.start();
 		}).listen(PORT, HOST);
 		LOGGER.info("Listening on {}:{}", HOST, server.actualPort());
+	}
+
+	private static IResolver buildResolver() {
+		IResolver resolver = new JsonResolver();
+		resolver.registerTypeCode(Message.class, 0x01);
+		resolver.registerTypeCode(FooBar.class, 0x02);
+		return resolver;
 	}
 
 }

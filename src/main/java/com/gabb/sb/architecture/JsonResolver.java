@@ -3,7 +3,7 @@ package com.gabb.sb.architecture;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
 
-public class ResolverImpl extends ResolverBase {
+public class JsonResolver extends ResolverBase {
 	
 	@Override
 	public IPayload resolve(Buffer buf) {

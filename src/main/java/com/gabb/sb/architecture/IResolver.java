@@ -8,9 +8,13 @@ import io.vertx.core.buffer.Buffer;
 public interface IResolver {
 
 	/**
+	 * Given a {@link Buffer} presumably from the incoming payload of a websocket connection, resolves it
+	 * into one of a set of predefined types that are registered via {@link IResolver#registerTypeCode(Class, int)}
 	 * 
-	 * @param buf
-	 * @return null if unable to resolve
+	 * @return null if unable to resolve, else the sucessfully resolved IPayload. 
+	 * 
+	 * Still some brainstorming to do as to how to implement StrategyPattern (i.e. IResolverStrategy)
+	 * 
 	 */
 	IPayload resolve(Buffer buf);
 
