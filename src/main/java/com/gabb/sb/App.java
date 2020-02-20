@@ -4,9 +4,10 @@ package com.gabb.sb;
 import ch.qos.logback.classic.Level;
 import com.gabb.sb.architecture.FooBar;
 import com.gabb.sb.architecture.IPayload;
-import com.gabb.sb.architecture.IResolver;
-import com.gabb.sb.architecture.JsonResolver;
+import com.gabb.sb.architecture.resolver.IResolver;
+import com.gabb.sb.architecture.resolver.strategies.JsonResolveStrategy;
 import com.gabb.sb.architecture.Message;
+import com.gabb.sb.architecture.resolver.Resolver;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import org.slf4j.Logger;
@@ -69,7 +70,7 @@ public class App {
 
 				IPayload payload = resolver.resolve(buf);
 				if(payload == null){
-					LOGGER.error("Unable to resolve payload " + buf);
+					LOGGER.error("Unable to deSerialize payload " + buf);
 				} else {
 					LOGGER.info("Resolved payload " + payload.getClass());
 				}
@@ -83,7 +84,8 @@ public class App {
 	}
 
 	private static IResolver buildResolver() {
-		IResolver resolver = new JsonResolver();
+		IResolver resolver = Resolver.resolver();
+		resolver.setStrategy(new JsonResolveStrategy());
 		resolver.registerTypeCode(Message.class, 0x01);
 		resolver.registerTypeCode(FooBar.class, 0x02);
 		return resolver;

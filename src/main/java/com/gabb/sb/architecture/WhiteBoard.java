@@ -1,6 +1,8 @@
 package com.gabb.sb.architecture;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.gabb.sb.architecture.resolver.IResolver;
+import com.gabb.sb.architecture.resolver.strategies.JsonResolveStrategy;
+import com.gabb.sb.architecture.resolver.Resolver;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
 
@@ -49,7 +51,8 @@ public final class WhiteBoard {
 
 	private IResolver buildResolver() {
 		//TODO: brainstorm better way to store these codes...
-		IResolver mResolver = new JsonResolver();
+		IResolver mResolver = Resolver.resolver();
+		mResolver.setStrategy(new JsonResolveStrategy());
 		mResolver.registerTypeCode(Message.class, 0x01);
 		mResolver.registerTypeCode(FooBar.class, 0x02);
 		return mResolver;
