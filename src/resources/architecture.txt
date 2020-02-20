@@ -14,6 +14,10 @@ Resolver:
             **** !!!! maybe I could use hash code!
             NO! can't do that, hash codes change from one runtime to another
             
+Resolver Strategy:
+    - A class that the Resolver uses to resolve a payload. Can be passed in externally
+    to allow more abstraction 
+            
 KeepAlive:
     - A class responsible for managing/observing the quality of a socket connection
     - Currently implemented in a way that just pings regularly and checks when the last pong was recieved
@@ -26,13 +30,39 @@ KeepAlive:
     this removes the responsibility of handling abnormal events from this class, and allows it to be passed to someone else!
     
     
-Listener:
+IListener:
     - A class that holds a type, indicating which kinds of POJO's it is able to process. Defines some code 
-    on how to consume that payload
+    on how to consume that payload. Uses reflection to infer the runtime type of the generic
     
-ListenerCaller:
-    - Holds a list of Listeners, and when it recieves a Timpl, distributes that to the listeners registered to be able
-    to process TImpl, Responsibility of further processing the Message is handed to the Listener's consume method
+IPayloadBroker (RENAME consumer/router/listenerdelegator:
+    - Holds a list of Listeners, and when it recieves a IPayload, distributes that to the listeners registered to be able
+    to process IPayload runtime instance, Responsibility of further processing the Message is handed to the Listener's consume method
+    
+PayloadPacker:
+    - Given an instance of IPayload, uses typecode map to infer its typecode and builds a Buffer
+    - uses a packing strategy, and will add the code of the packing strategy into the buffer
+
+PackingStrategy
+    - Given an IPayload, allows customizable way to turn it into a stream of bytes
+
+
+!!! Need a way to have a class that is the base for all payloads, that contains the common logic
+to extract the typecode for the class and packing strategy...
+
+
+Consider renaming:
+
+IResolver -> IDeSerializer
+IResolvingStrategy -> IDeSerializingStrategy
+IPayloadBacker -> ISerializer
+IPayloadPackingStrategy -> ISerializationStrategy
+
+Could possibly group these together in a parent...
+
+ISerializer contains ISerializationStrategy
+ISerializationStratrgy contains instructions for Serializing an IPayload into byte[], and
+    deserializing a byte[] into an IPayload... 
+
     
     
     
