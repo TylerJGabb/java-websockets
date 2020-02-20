@@ -11,13 +11,14 @@ public final class WhiteBoard {
 	private static PayloadBrokerBase cBroker;
 
 	public static void main(String[] args) throws IOException {
-		IResolver resolver = new ResolverImpl();
-		resolver.registerType(Message.class);
-		resolver.registerType(FooBar.class);
 		IPayload meessage = new Message(1);
 		IPayload foobar = new FooBar("Tyler");
-		Buffer mesBuf = wrapInBuffer(meessage);
-		Buffer fooBuf = wrapInBuffer(foobar);
+		Buffer mesBuf = wrapInBuffer(meessage, 0x01);
+		Buffer fooBuf = wrapInBuffer(foobar, 0x02);
+		IResolver resolver = new ResolverImpl();
+		//TODO: brainstorm better way to store these codes...
+		resolver.registerTypeCode(0x01,  Message.class);
+		resolver.registerTypeCode(0x02, FooBar.class);
 		IPayload recieved = resolver.resolve(mesBuf);
 		brokerTest(recieved);
 		recieved = resolver.resolve(fooBuf);
@@ -25,9 +26,8 @@ public final class WhiteBoard {
 		
 	}
 
-	private static Buffer wrapInBuffer(IPayload aPayload) {
+	private static Buffer wrapInBuffer(IPayload aPayload, int code) {
 		Buffer buf = Buffer.buffer();
-		int code = aPayload.getClass().hashCode();
 		buf.appendInt(code);
 		String encoded = Json.encode(aPayload);
 		buf.appendString(encoded);

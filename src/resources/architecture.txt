@@ -12,6 +12,7 @@ Resolver:
             - not sure I 100% like the idea, but the resolver could hold this map
             problem with this is that I need to maintain this on both embedded and server side
             **** !!!! maybe I could use hash code!
+            NO! can't do that, hash codes change from one runtime to another
             
 KeepAlive:
     - A class responsible for managing/observing the quality of a socket connection
