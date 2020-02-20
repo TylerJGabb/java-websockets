@@ -17,8 +17,8 @@ public final class WhiteBoard {
 		Buffer fooBuf = wrapInBuffer(foobar, 0x02);
 		IResolver resolver = new ResolverImpl();
 		//TODO: brainstorm better way to store these codes...
-		resolver.registerTypeCode(0x01,  Message.class);
-		resolver.registerTypeCode(0x02, FooBar.class);
+		resolver.registerTypeCode(Message.class, 0x01);
+		resolver.registerTypeCode(FooBar.class, 0x02);
 		IPayload recieved = resolver.resolve(mesBuf);
 		brokerTest(recieved);
 		recieved = resolver.resolve(fooBuf);

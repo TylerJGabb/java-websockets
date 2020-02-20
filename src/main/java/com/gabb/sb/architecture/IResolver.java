@@ -14,8 +14,9 @@ public interface IResolver {
 	 * Payloads of that type. If you try to resolve a Payload that is of a type
 	 * not registered, it will not be resolved
 	 * @param clazz
+	 * @param code
 	 * @return true if type was already registered
 	 */
-	boolean registerType(Class<? extends IPayload> clazz);
+	boolean registerTypeCode(Class<? extends IPayload> clazz, int code);
 	
 }

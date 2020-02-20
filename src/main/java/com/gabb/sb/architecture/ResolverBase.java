@@ -13,8 +13,8 @@ public abstract class ResolverBase implements IResolver {
 	}
 
 	@Override
-	public boolean registerType(Class<? extends IPayload> clazz) {
-		return oTypeMap.put(clazz.hashCode(), clazz) == null;
+	public boolean registerTypeCode(Class<? extends IPayload> clazz, int code) {
+		return oTypeMap.put(code, clazz) != null;
 	}
 
 	@Override
