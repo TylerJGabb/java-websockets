@@ -6,7 +6,12 @@ import io.vertx.core.buffer.Buffer;
  * Resolves raw binary data into a Type and Payload
  */
 public interface IResolver {
-	
+
+	/**
+	 * 
+	 * @param buf
+	 * @return null if unable to resolve
+	 */
 	IPayload resolve(Buffer buf);
 
 	/**

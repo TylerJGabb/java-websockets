@@ -1,12 +1,14 @@
 package com.gabb.sb.architecture;
 
+import com.gabb.sb.architecture.IPayload;
+import com.gabb.sb.architecture.IResolver;
 import io.vertx.core.buffer.Buffer;
 
 import java.util.HashMap;
 
 public abstract class ResolverBase implements IResolver {
 	
-	HashMap<Integer, Class<? extends IPayload>> oTypeMap;
+	protected HashMap<Integer, Class<? extends IPayload>> oTypeMap;
 
 	public ResolverBase() {
 		oTypeMap = new HashMap<>();
