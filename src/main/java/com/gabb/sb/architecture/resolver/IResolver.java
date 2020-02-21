@@ -10,7 +10,7 @@ import io.vertx.core.buffer.Buffer;
 public interface IResolver {
 
 	/**
-	 * sets the strategy that this testRouter used to resolve incoming packets
+	 * sets the strategy that this testDispatcher used to resolve incoming packets
 	 * @param strategy
 	 */
 	

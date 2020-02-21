@@ -2,7 +2,7 @@ package com.gabb.sb.architecture.websocket;
 
 import com.gabb.sb.architecture.connection_integrity.KeepAlive;
 import com.gabb.sb.architecture.payloads.IPayload;
-import com.gabb.sb.architecture.payloads.routing.IPayloadRouter;
+import com.gabb.sb.architecture.payloads.dispatching.IPayloadDispatcher;
 import com.gabb.sb.architecture.resolver.IResolver;
 import io.vertx.core.Handler;
 import io.vertx.core.http.ServerWebSocket;
@@ -13,15 +13,15 @@ public class ServerWebSocketHandler implements Handler<ServerWebSocket> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ServerWebSocketHandler.class);
 	private IResolver oResolver;
-	private IPayloadRouter oRouter;
+	private IPayloadDispatcher oDispatcher;
 
 	public ServerWebSocketHandler setResolver(IResolver aResolver) {
 		oResolver = aResolver;
 		return this;
 	}
 
-	public ServerWebSocketHandler setRouter(IPayloadRouter aRouter) {
-		oRouter = aRouter;
+	public ServerWebSocketHandler setDispatcher(IPayloadDispatcher aRouter) {
+		oDispatcher = aRouter;
 		return this;
 	}
 
@@ -42,7 +42,7 @@ public class ServerWebSocketHandler implements Handler<ServerWebSocket> {
 						LOGGER.warn("Unable to resolve payload " + buf);
 					} else {
 						LOGGER.info("Routing payload " + payload.getClass());
-						oRouter.route(payload);
+						oDispatcher.route(payload);
 					}
 				}
 			} catch (Exception ex) {

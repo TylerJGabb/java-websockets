@@ -3,7 +3,7 @@ package com.gabb.sb.architecture.actors;
 
 import ch.qos.logback.classic.Level;
 import com.gabb.sb.Util;
-import com.gabb.sb.architecture.payloads.routing.IPayloadRouter;
+import com.gabb.sb.architecture.payloads.dispatching.IPayloadDispatcher;
 import com.gabb.sb.architecture.resolver.IResolver;
 import com.gabb.sb.architecture.factory.UtilFactory;
 import com.gabb.sb.architecture.websocket.ServerWebSocketHandler;
@@ -34,8 +34,8 @@ public class Server {
 		Vertx vertx = Vertx.vertx();
 		HttpServer server = vertx.createHttpServer();
 		IResolver resolver = UtilFactory.testJsonResolver();
-		IPayloadRouter router = UtilFactory.testRouter();
-		ServerWebSocketHandler handler = new ServerWebSocketHandler().setResolver(resolver).setRouter(router);
+		IPayloadDispatcher router = UtilFactory.testDispatcher();
+		ServerWebSocketHandler handler = new ServerWebSocketHandler().setResolver(resolver).setDispatcher(router);
 		server.websocketHandler(handler).listen(PORT, HOST);
 		LOGGER.info("Listening on {}:{}", HOST, server.actualPort());
 	}

@@ -1,8 +1,8 @@
 package com.gabb.sb.architecture.factory;
 
-import com.gabb.sb.architecture.listners.AbstractListener;
-import com.gabb.sb.architecture.payloads.routing.IPayloadRouter;
-import com.gabb.sb.architecture.payloads.routing.AbstractPayloadRouter;
+import com.gabb.sb.architecture.payloads.processing.AbstractPayloadProcessor;
+import com.gabb.sb.architecture.payloads.dispatching.IPayloadDispatcher;
+import com.gabb.sb.architecture.payloads.dispatching.AbstractPayloadDispatcher;
 import com.gabb.sb.architecture.resolver.IResolver;
 import com.gabb.sb.architecture.resolver.AbstractResolver;
 import com.gabb.sb.architecture.payloads.PayloadWithInteger;
@@ -23,9 +23,9 @@ public final class UtilFactory {
 		return mResolver;
 	}
 
-	public static IPayloadRouter testRouter() {
-		IPayloadRouter mPayloadRouter = new AbstractPayloadRouter() {};
-		mPayloadRouter.registerListener(new AbstractListener<PayloadWithString>() {
+	public static IPayloadDispatcher testDispatcher() {
+		IPayloadDispatcher mPayloadRouter = new AbstractPayloadDispatcher() {};
+		mPayloadRouter.registerConsumer(new AbstractPayloadProcessor<PayloadWithString>() {
 
 			@Override
 			public void consume(PayloadWithString payload) {
@@ -33,7 +33,7 @@ public final class UtilFactory {
 			}
 		});
 
-		mPayloadRouter.registerListener(new AbstractListener<PayloadWithInteger>() {
+		mPayloadRouter.registerConsumer(new AbstractPayloadProcessor<PayloadWithInteger>() {
 
 			@Override
 			public void consume(PayloadWithInteger payload) {

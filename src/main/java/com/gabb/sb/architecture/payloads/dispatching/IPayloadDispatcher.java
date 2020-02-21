@@ -1,19 +1,19 @@
-package com.gabb.sb.architecture.payloads.routing;
+package com.gabb.sb.architecture.payloads.dispatching;
 
-import com.gabb.sb.architecture.listners.IListener;
+import com.gabb.sb.architecture.payloads.processing.IPayloadProcessor;
 import com.gabb.sb.architecture.payloads.IPayload;
 
 /**
  * Takes a payload, and routes it to a listener. 
  */
-public interface IPayloadRouter {
+public interface IPayloadDispatcher {
 
 	/**
 	 * @param aListener
 	 * @return true if the listener was already added, or conflicts with another listening
 	 * for the same IPayload
 	 */
-	boolean registerListener(IListener aListener);
+	boolean registerConsumer(IPayloadProcessor aListener);
 
 	/**
 	 * @param aPayload
