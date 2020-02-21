@@ -1,23 +1,23 @@
 package com.gabb.sb.architecture.resolver;
 
-import com.gabb.sb.architecture.IPayload;
+import com.gabb.sb.architecture.payloads.IPayload;
 import com.gabb.sb.architecture.resolver.strategies.IPayloadResolveStrategy;
 import io.vertx.core.buffer.Buffer;
 
 import java.util.HashMap;
 
-public abstract class Resolver implements IResolver {
+public abstract class AbstractResolver implements IResolver {
 	
 	private HashMap<Integer, Class<? extends IPayload>> oCodeToTypeMap;
 	private HashMap<Class<? extends IPayload>, Integer> oTypeToCodeMap;
 	private IPayloadResolveStrategy oStrategy;
 	
 	public static IResolver resolver(){
-		return new Resolver(){};
+		return new AbstractResolver(){};
 	}
 	
 
-	public Resolver() {
+	public AbstractResolver() {
 		oCodeToTypeMap = new HashMap<>();
 		oTypeToCodeMap = new HashMap<>();
 	}
@@ -29,26 +29,21 @@ public abstract class Resolver implements IResolver {
 
 	@Override
 	public IPayload resolve(Buffer buf) {
-		Class<? extends IPayload> clazz = oCodeToTypeMap.get(buf.getInt(0));
-		if(clazz != null){
-			Buffer payloadSection = buf.getBuffer(Integer.SIZE / Byte.SIZE, buf.length());
-			return oStrategy.deSerialize(payloadSection, clazz);
-		} else {
-			return null; //TODO: Throw unresolvable exception, maybe log something!
-		}
+		int mTypeCode = buf.getInt(0);
+		Class<? extends IPayload> clazz = oCodeToTypeMap.get(mTypeCode);
+		if(clazz == null) return null;
+		Buffer payloadSection = buf.getBuffer(Integer.SIZE / Byte.SIZE, buf.length());
+		return oStrategy.deSerialize(payloadSection, clazz);
 	}
 
 	@Override
 	public Buffer resolve(IPayload payload) {
 		Integer typeCode = oTypeToCodeMap.get(payload.getClass());
-		if(typeCode != null){
-			Buffer writeTo = Buffer.buffer();
-			writeTo.appendInt(typeCode);
-			oStrategy.serialize(writeTo, payload);
-			return writeTo;
-		} else {
-			return null; //TODO: Throw UnresolvableException. Maybe log something too!!
-		}
+		if(typeCode == null) return null;
+		Buffer writeTo = Buffer.buffer();
+		writeTo.appendInt(typeCode);
+		oStrategy.serialize(writeTo, payload);
+		return writeTo;
 	}
 
 	@Override

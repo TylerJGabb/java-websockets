@@ -1,6 +1,6 @@
 package com.gabb.sb.architecture.resolver;
 
-import com.gabb.sb.architecture.IPayload;
+import com.gabb.sb.architecture.payloads.IPayload;
 import com.gabb.sb.architecture.resolver.strategies.IPayloadResolveStrategy;
 import io.vertx.core.buffer.Buffer;
 
@@ -10,7 +10,7 @@ import io.vertx.core.buffer.Buffer;
 public interface IResolver {
 
 	/**
-	 * sets the strategy that this router used to deSerialize incoming packets
+	 * sets the strategy that this testRouter used to resolve incoming packets
 	 * @param strategy
 	 */
 	
@@ -20,7 +20,7 @@ public interface IResolver {
 	 * Given a {@link Buffer} presumably from the incoming payload of a websocket connection, resolves it
 	 * into one of a set of predefined types that are registered via {@link IResolver#registerTypeCode(Class, int)}
 	 * 
-	 * @return null if unable to deSerialize, else the sucessfully resolved IPayload. 
+	 * @return null if unable to resolve, else the sucessfully resolved IPayload. 
 	 *
 	 */
 	IPayload resolve(Buffer buf);
@@ -36,7 +36,7 @@ public interface IResolver {
 
 	/**
 	 * registers a type with this resolver, making it capable of resolving
-	 * Payloads of that type. If you try to deSerialize a Payload that is of a type
+	 * Payloads of that type. If you try to resolve a Payload that is of a type
 	 * not registered, it will not be resolved
 	 * @param clazz
 	 * @param code

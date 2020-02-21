@@ -68,6 +68,18 @@ ISerializationStratrgy contains instructions for Serializing an IPayload into by
     
 ServerSide vs ClientSide
 
+Server:
+    So the server will contain a resolver and be waiting for frames, and be ready to invoke any listener
+    for the payload contained in the frame..
+    
+    The server should not try to resolve any pong frames
+    
+    For each websocker connection, a keepalive will monitor the connection for any anomalies
+    and attempt to keep the connection alive as long as its feasible and no errors have occurred...
+   
+
+
+
 
     
 

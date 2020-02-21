@@ -1,4 +1,4 @@
-package com.gabb.sb;
+package com.gabb.sb.play;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.sun.javafx.collections.MappingChange;

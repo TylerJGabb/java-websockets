@@ -1,13 +1,16 @@
-package com.gabb.sb.architecture;
+package com.gabb.sb.architecture.payloads.routing;
 
+
+import com.gabb.sb.architecture.listners.IListener;
+import com.gabb.sb.architecture.payloads.IPayload;
 
 import java.util.HashMap;
 //TODO: make thread safe??
-public abstract class PayloadRouterBase implements IPayloadRouter {
+public abstract class AbstractPayloadRouter implements IPayloadRouter {
 
 	private HashMap<Class<? extends IPayload>, IListener> oListeners;
 
-	protected PayloadRouterBase() {
+	protected AbstractPayloadRouter() {
 		oListeners = new HashMap<>();
 	}
 
@@ -15,7 +18,7 @@ public abstract class PayloadRouterBase implements IPayloadRouter {
 	public boolean registerListener(IListener aListener) {
 		Class<? extends IPayload> mClass = aListener.acceptedPayload();
 		if(oListeners.containsKey(mClass)){
-			System.out.println("Listener already registered for " + mClass);
+			System.out.println("AbstractListener already registered for " + mClass);
 			return true;
 		}
 		oListeners.put(mClass, aListener);

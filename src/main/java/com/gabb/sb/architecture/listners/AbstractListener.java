@@ -1,8 +1,9 @@
-package com.gabb.sb.architecture;
+package com.gabb.sb.architecture.listners;
 
+import com.gabb.sb.architecture.payloads.IPayload;
 import com.google.common.reflect.TypeToken;
 
-public abstract class ListenerBase<T extends IPayload> implements IListener<T> {
+public abstract class AbstractListener<T extends IPayload> implements IListener<T> {
 
 	/**
 	 * {@link TypeToken} is written by google and is a way to capture the runtime type of T
@@ -10,7 +11,7 @@ public abstract class ListenerBase<T extends IPayload> implements IListener<T> {
 	 */
 	private final TypeToken<T> oToken;
 
-	public ListenerBase(){
+	public AbstractListener(){
 		oToken = new TypeToken<T>(getClass()){};
 	}
 

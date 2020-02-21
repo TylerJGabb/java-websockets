@@ -1,4 +1,4 @@
-package com.gabb.sb;
+package com.gabb.sb.architecture.connection_integrity;
 
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.util.function.Function;
 
-class KeepAlive extends Thread {
+public class KeepAlive extends Thread {
 
 	public static final int DEFAULT_PERIOD = 5000;
 	public static final int OVERDUE_PONG_PERCENTAGE_LIMIT = 50;

@@ -1,6 +1,6 @@
 package com.gabb.sb.architecture.resolver.strategies;
 
-import com.gabb.sb.architecture.IPayload;
+import com.gabb.sb.architecture.payloads.IPayload;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
 
