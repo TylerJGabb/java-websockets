@@ -76,6 +76,18 @@ Server:
     
     For each websocker connection, a keepalive will monitor the connection for any anomalies
     and attempt to keep the connection alive as long as its feasible and no errors have occurred...
+    
+    
+Client:
+    on Client Side, take a look at Client.java.
+    I like the implementation of it, and how it continuously tries
+    to keep a viable connection. 
+    
+    Something like that really isn't necessary on serverside, 
+    because the client requests to connect, the server is just
+    keeping an eye on the quality of the connection. 
+    
+    IKeepAlive still has to be re-implemented though. 
    
 
 

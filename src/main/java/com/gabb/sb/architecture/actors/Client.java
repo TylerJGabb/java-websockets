@@ -7,22 +7,40 @@ import com.gabb.sb.architecture.payloads.PayloadWithInteger;
 import com.gabb.sb.architecture.payloads.PayloadWithString;
 import com.gabb.sb.architecture.resolver.IResolver;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Random;
+
+/**
+ * This class is purely for sandboxing, but the way its designed would make for a really great
+ * starting point for a new implementation of {@link com.gabb.sb.architecture.connection_integrity.IKeepAlive} 
+ * but on client side. 
+ */
 public class Client {
 
+	private static final Random RANDOM = new Random();
+	private static Buffer[] cBuffers;
 
-	private static IResolver cResolver;
 	private static final Logger LOGGER = LoggerFactory.getLogger(Client.class);
 	private static HttpClient cClient;
-
 	public static void main(String[] args) {
 		Util.configureLoggersProgrammatically(Level.INFO);
-		cResolver = UtilFactory.testJsonResolver();
+		IResolver mCResolver = UtilFactory.testJsonResolver();
 		cClient = Vertx.vertx().createHttpClient();
+		cBuffers = new Buffer[]{
+				mCResolver.resolve(new PayloadWithInteger(123)),
+				mCResolver.resolve(new PayloadWithString("I did it!")),
+				Buffer.buffer("I am not resolvable! I am a generic text payload")
+		};
+		connect();
+	}
+
+	private static void connect() {
+		LOGGER.info("Attempting to connect...");
 		cClient.websocket(Server.PORT, Server.HOST, "/", Client::onConnected, Client::onFailureToConnect);
 	}
 
@@ -30,26 +48,37 @@ public class Client {
 		LOGGER.error("{}, Retrying in 5 seconds", aThrowable.toString());
 		new Thread(() -> {
 			try { Thread.sleep(5000); } catch (InterruptedException ignored) { }
-			cClient.websocket(Server.PORT, Server.HOST, "/", Client::onConnected, Client::onFailureToConnect);
+			connect();
 		}).start();
 	}
-	
+
 	private static void onConnected(WebSocket socket) {
 		LOGGER.info("Connection successful! Connected to {}", socket.remoteAddress());
-		new Thread(){
+		newRandoSender(socket).start();
+	}
+
+	private static Thread newRandoSender(WebSocket socket) {
+		return new Thread(){
 			@Override
 			public void run() {
 				while (!isInterrupted()) try {
+					Buffer mRawDatum = randoBuf();
+					LOGGER.info("Sending {}", mRawDatum);
+					socket.write(mRawDatum);
+					LOGGER.info("Sleeping 1000ms");
 					Thread.sleep(1000);
-					socket.writeBinaryMessage(cResolver.resolve(new PayloadWithInteger(123)));
-					Thread.sleep(1000);
-					socket.writeBinaryMessage(cResolver.resolve(new PayloadWithString("I did it!")));
-					Thread.sleep(1000);
-					socket.writeTextMessage("I am not resolvable! I am a generic text payload");
 				} catch (Exception ex) {
-					ex.printStackTrace();
+					LOGGER.error("Encountered exception when sending oRandom data, terminating and attempting to reconnect");
+					interrupt();
+					connect();
+					break;
 				}
+				LOGGER.info("Randomized socket writer expired...");
 			}
-		}.start();
+		};
+	}
+
+	private static Buffer randoBuf() {
+		return cBuffers[RANDOM.nextInt(3)];
 	}
 }
