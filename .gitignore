@@ -5,4 +5,5 @@
 *.iml
 /.idea/
 /.settings/
-websocket-sb.iml
+websocket-sb.iml/
+/bin/

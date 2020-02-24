@@ -1,7 +1,6 @@
 package com.gabb.sb.play;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.sun.javafx.collections.MappingChange;
 
 import java.util.HashMap;
 import java.util.Map;
