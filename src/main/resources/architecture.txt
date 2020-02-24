@@ -32,11 +32,11 @@ KeepAlive:
     
 IListener:
     - A class that holds a type, indicating which kinds of POJO's it is able to process. Defines some code 
-    on how to consume that payload. Uses reflection to infer the runtime type of the generic
+    on how to process that payload. Uses reflection to infer the runtime type of the generic
     
 IPayloadBroker (RENAME consumer/router/listenerdelegator:
     - Holds a list of Listeners, and when it recieves a IPayload, distributes that to the listeners registered to be able
-    to process IPayload runtime instance, Responsibility of further processing the Message is handed to the Listener's consume method
+    to process IPayload runtime instance, Responsibility of further processing the Message is handed to the Listener's process method
     
 PayloadPacker:
     - Given an instance of IPayload, uses typecode map to infer its typecode and builds a Buffer

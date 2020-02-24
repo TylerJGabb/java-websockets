@@ -1,9 +1,9 @@
 package com.gabb.sb.architecture.websocket;
 
 import com.gabb.sb.architecture.connection_integrity.KeepAlive;
-import com.gabb.sb.architecture.payloads.IPayload;
-import com.gabb.sb.architecture.payloads.dispatching.IPayloadDispatcher;
-import com.gabb.sb.architecture.resolver.IResolver;
+import com.gabb.sb.architecture.messages.IMessage;
+import com.gabb.sb.architecture.messages.dispatching.IMessageDispatcher;
+import com.gabb.sb.architecture.resolver.IMessageResolver;
 import io.vertx.core.Handler;
 import io.vertx.core.http.ServerWebSocket;
 import org.slf4j.Logger;
@@ -12,15 +12,15 @@ import org.slf4j.LoggerFactory;
 public class ServerWebSocketHandler implements Handler<ServerWebSocket> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ServerWebSocketHandler.class);
-	private IResolver oResolver;
-	private IPayloadDispatcher oDispatcher;
+	private IMessageResolver oResolver;
+	private IMessageDispatcher oDispatcher;
 
-	public ServerWebSocketHandler setResolver(IResolver aResolver) {
+	public ServerWebSocketHandler setResolver(IMessageResolver aResolver) {
 		oResolver = aResolver;
 		return this;
 	}
 
-	public ServerWebSocketHandler setDispatcher(IPayloadDispatcher aRouter) {
+	public ServerWebSocketHandler setDispatcher(IMessageDispatcher aRouter) {
 		oDispatcher = aRouter;
 		return this;
 	}
@@ -33,22 +33,26 @@ public class ServerWebSocketHandler implements Handler<ServerWebSocket> {
 			s.close();
 			return true; //stop the keepalive
 		});
-		serverWebSocket.handler(buf -> { try {
+		serverWebSocket.handler(buf -> { 
+			try {
 				if (buf.length() == 0) {
 					LOGGER.trace("received empty payload from {}, ignoring...", serverWebSocket.remoteAddress());
 				} else {
-					IPayload payload = oResolver.resolve(buf);
+					IMessage payload = oResolver.resolve(buf);
 					if (payload == null) {
 						LOGGER.warn("Unable to resolve payload " + buf);
 					} else {
 						LOGGER.info("Routing payload " + payload.getClass());
-						oDispatcher.route(payload);
+						oDispatcher.dispatch(payload);
 					}
 				}
 			} catch (Exception ex) {
 				LOGGER.error("Exception while handling WebSocket Buffer", ex);
 			}
-		}).closeHandler(closeHandler -> keepAlive.interrupt())
+		}).closeHandler(closeHandler -> {
+			LOGGER.warn("Connection Closed for {}", serverWebSocket.remoteAddress());
+			keepAlive.interrupt();
+		})
 				.exceptionHandler(Throwable::printStackTrace)
 				.writeFinalTextFrame("Connected!");
 		keepAlive.start();

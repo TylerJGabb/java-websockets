@@ -3,9 +3,9 @@ package com.gabb.sb.architecture.actors;
 import ch.qos.logback.classic.Level;
 import com.gabb.sb.Util;
 import com.gabb.sb.architecture.factory.UtilFactory;
-import com.gabb.sb.architecture.payloads.PayloadWithInteger;
-import com.gabb.sb.architecture.payloads.PayloadWithString;
-import com.gabb.sb.architecture.resolver.IResolver;
+import com.gabb.sb.architecture.messages.MessageWithInteger;
+import com.gabb.sb.architecture.messages.MessageWithString;
+import com.gabb.sb.architecture.resolver.IMessageResolver;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
@@ -29,11 +29,11 @@ public class Client {
 	private static HttpClient cClient;
 	public static void main(String[] args) {
 		Util.configureLoggersProgrammatically(Level.INFO);
-		IResolver mCResolver = UtilFactory.testJsonResolver();
+		IMessageResolver mCResolver = UtilFactory.testJsonResolver();
 		cClient = Vertx.vertx().createHttpClient();
 		cBuffers = new Buffer[]{
-				mCResolver.resolve(new PayloadWithInteger(123)),
-				mCResolver.resolve(new PayloadWithString("I did it!")),
+				mCResolver.resolve(new MessageWithInteger(123)),
+				mCResolver.resolve(new MessageWithString("I did it!")),
 				Buffer.buffer("I am not resolvable! I am a generic text payload")
 		};
 		connect();

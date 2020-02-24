@@ -1,17 +1,17 @@
-package com.gabb.sb.architecture.payloads;
+package com.gabb.sb.architecture.messages;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class PayloadWithInteger implements IPayload {
+public class MessageWithInteger implements IMessage {
 
 	//seems that if I name this field 'oInt' that the json encoder that comes with vertx
 	//adds an additional property during serialization...
 	@JsonProperty
 	public int theInteger;
 
-	public PayloadWithInteger() { }
+	public MessageWithInteger() { }
 
-	public PayloadWithInteger(int aInt) {
+	public MessageWithInteger(int aInt) {
 		theInteger = aInt;
 	}
 

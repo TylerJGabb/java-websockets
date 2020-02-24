@@ -3,8 +3,8 @@ package com.gabb.sb.architecture.actors;
 
 import ch.qos.logback.classic.Level;
 import com.gabb.sb.Util;
-import com.gabb.sb.architecture.payloads.dispatching.IPayloadDispatcher;
-import com.gabb.sb.architecture.resolver.IResolver;
+import com.gabb.sb.architecture.messages.dispatching.IMessageDispatcher;
+import com.gabb.sb.architecture.resolver.IMessageResolver;
 import com.gabb.sb.architecture.factory.UtilFactory;
 import com.gabb.sb.architecture.websocket.ServerWebSocketHandler;
 import io.vertx.core.Vertx;
@@ -33,8 +33,8 @@ public class Server {
 		Util.configureLoggersProgrammatically(Level.INFO);
 		Vertx vertx = Vertx.vertx();
 		HttpServer server = vertx.createHttpServer();
-		IResolver resolver = UtilFactory.testJsonResolver();
-		IPayloadDispatcher router = UtilFactory.testDispatcher();
+		IMessageResolver resolver = UtilFactory.testJsonResolver();
+		IMessageDispatcher router = UtilFactory.testDispatcher();
 		ServerWebSocketHandler handler = new ServerWebSocketHandler().setResolver(resolver).setDispatcher(router);
 		server.websocketHandler(handler).listen(PORT, HOST);
 		LOGGER.info("Listening on {}:{}", HOST, server.actualPort());

@@ -1,15 +1,15 @@
-package com.gabb.sb.architecture.payloads;
+package com.gabb.sb.architecture.messages;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class PayloadWithString implements IPayload {
+public class MessageWithString implements IMessage {
 
 	@JsonProperty("string")
 	String oString;
 
-	public PayloadWithString() { }
+	public MessageWithString() { }
 
-	public PayloadWithString(String aStr) {
+	public MessageWithString(String aStr) {
 		oString = aStr;
 	}
 

@@ -1,9 +1,9 @@
-package com.gabb.sb.architecture.payloads.processing;
+package com.gabb.sb.architecture.messages.processing;
 
-import com.gabb.sb.architecture.payloads.IPayload;
+import com.gabb.sb.architecture.messages.IMessage;
 import com.google.common.reflect.TypeToken;
 
-public abstract class AbstractPayloadProcessor<T extends IPayload> implements IPayloadProcessor<T> {
+public abstract class AbstractMessageProcessor<T extends IMessage> implements IMessageProcessor<T> {
 
 	/**
 	 * {@link TypeToken} is written by google and is a way to capture the runtime type of T
@@ -11,12 +11,12 @@ public abstract class AbstractPayloadProcessor<T extends IPayload> implements IP
 	 */
 	private final TypeToken<T> oToken;
 
-	public AbstractPayloadProcessor(){
+	public AbstractMessageProcessor(){
 		oToken = new TypeToken<T>(getClass()){};
 	}
 
 	@Override
-	public final Class canConsume() {
+	public final Class canProcess() {
 		return oToken.getRawType();
 	}
 }
