@@ -11,33 +11,33 @@ import java.util.HashMap;
  * When an incoming {@link io.vertx.core.buffer.Buffer} is resolved by an
  * {@link IMessageResolver} into an {@link IMessage},
  * it is then passed to an instance of this class, who then finds an
- * {@link IMessageProcessor} capable of processing said payload. 
+ * {@link IMessageProcessor} capable of processing it.
  */
 public abstract class AbstractMessageDispatcher implements IMessageDispatcher {
 	//TODO: make thread safe??
 
-	private HashMap<Class<? extends IMessage>, IMessageProcessor> oListeners;
+	private HashMap<Class<? extends IMessage>, IMessageProcessor> oMessageProcessorMap;
 
 	protected AbstractMessageDispatcher() {
-		oListeners = new HashMap<>();
+		oMessageProcessorMap = new HashMap<>();
 	}
 
 	@Override
-	public boolean registerPayloadProcessor(IMessageProcessor aListener) {
-		Class<? extends IMessage> mClass = aListener.canProcess();
-		if(oListeners.containsKey(mClass)){
+	public boolean registerMessageProcessor(IMessageProcessor messageProcessor) {
+		Class<? extends IMessage> mClass = messageProcessor.canProcess();
+		if(oMessageProcessorMap.containsKey(mClass)){
 			System.out.println("AbstractMessageProcessor already registered for " + mClass);
 			return true;
 		}
-		oListeners.put(mClass, aListener);
+		oMessageProcessorMap.put(mClass, messageProcessor);
 		return false;
 	}
 
 	@Override
-	public boolean dispatch(IMessage aPayload) {
-		IMessageProcessor mIListener = oListeners.get(aPayload.getClass());
-		if(mIListener != null){
-			mIListener.process(aPayload);
+	public boolean dispatch(IMessage message) {
+		IMessageProcessor processor = oMessageProcessorMap.get(message.getClass());
+		if(processor != null){
+			processor.process(message);
 			return true;
 		}
 		return false;

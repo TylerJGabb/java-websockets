@@ -23,23 +23,27 @@ public final class UtilFactory {
 		return mResolver;
 	}
 
+	/**
+	 * Builds a dispatcher that can dispatch {@link MessageWithInteger} and {@link MessageWithString}
+	 * @return
+	 */
 	public static IMessageDispatcher testDispatcher() {
-		IMessageDispatcher mPayloadRouter = new AbstractMessageDispatcher() {};
-		mPayloadRouter.registerPayloadProcessor(new AbstractMessageProcessor<MessageWithString>() {
+		IMessageDispatcher messageDispatcher = new AbstractMessageDispatcher() {};
+		messageDispatcher.registerMessageProcessor(new AbstractMessageProcessor<MessageWithString>() {
 
 			@Override
-			public void process(MessageWithString payload) {
-				System.out.println("Got MessageWithString containing " + payload.getString());
+			public void process(MessageWithString message) {
+				System.out.println("Got MessageWithString containing " + message.getString());
 			}
 		});
 
-		mPayloadRouter.registerPayloadProcessor(new AbstractMessageProcessor<MessageWithInteger>() {
+		messageDispatcher.registerMessageProcessor(new AbstractMessageProcessor<MessageWithInteger>() {
 
 			@Override
-			public void process(MessageWithInteger payload) {
-				System.out.println("Got MessageWithInteger containing " + payload.getTheInteger());
+			public void process(MessageWithInteger message) {
+				System.out.println("Got MessageWithInteger containing " + message.getTheInteger());
 			}
 		});
-		return mPayloadRouter;
+		return messageDispatcher;
 	}
 }

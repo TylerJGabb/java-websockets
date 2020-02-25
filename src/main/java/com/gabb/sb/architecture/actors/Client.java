@@ -34,7 +34,7 @@ public class Client {
 		cBuffers = new Buffer[]{
 				mCResolver.resolve(new MessageWithInteger(123)),
 				mCResolver.resolve(new MessageWithString("I did it!")),
-				Buffer.buffer("I am not resolvable! I am a generic text payload")
+				Buffer.buffer("I am not resolvable! I am a generic text message")
 		};
 		connect();
 	}

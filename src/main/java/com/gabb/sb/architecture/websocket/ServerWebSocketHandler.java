@@ -53,8 +53,8 @@ public class ServerWebSocketHandler implements Handler<ServerWebSocket> {
 			LOGGER.warn("Connection Closed for {}", serverWebSocket.remoteAddress());
 			keepAlive.interrupt();
 		})
-				.exceptionHandler(Throwable::printStackTrace)
-				.writeFinalTextFrame("Connected!");
+		.exceptionHandler(Throwable::printStackTrace)
+		.writeFinalTextFrame("Connected!");
 		keepAlive.start();
 	}
 }

@@ -16,8 +16,9 @@ public interface IMessageResolver {
 	void setStrategy(IMessageResolveStrategy strategy);
 	
 	/**
-	 * Given a {@link Buffer} presumably from the incoming payload of a websocket connection, resolves it
-	 * into one of a set of predefined types that are registered via {@link IMessageResolver#registerTypeCode(Class, int)}
+	 * Given a {@link Buffer} presumably from the incoming payload of a web socket connection, resolves it
+	 * into one of a set of predefined types that are registered via
+	 * {@link IMessageResolver#registerTypeCode(Class, int)}
 	 */
 	IMessage resolve(Buffer buf) throws IllegalStateException;
 

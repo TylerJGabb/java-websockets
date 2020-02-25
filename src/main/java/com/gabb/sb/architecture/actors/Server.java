@@ -26,7 +26,7 @@ public class Server {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
 	
-	public static final String HOST = "172.16.11.96";
+	public static final String HOST = "localhost";
 	public static final int PORT = 8080;
 
 	public static void main(String[] args) {
