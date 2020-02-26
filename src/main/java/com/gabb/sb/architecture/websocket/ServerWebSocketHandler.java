@@ -33,7 +33,7 @@ public class ServerWebSocketHandler implements Handler<ServerWebSocket> {
 			s.close();
 			return true; //stop the keepalive
 		});
-		serverWebSocket.handler(buf -> { 
+		serverWebSocket.handler(buf -> {
 			try {
 				if (buf.length() == 0) {
 					LOGGER.trace("received empty payload from {}, ignoring...", serverWebSocket.remoteAddress());
@@ -53,7 +53,7 @@ public class ServerWebSocketHandler implements Handler<ServerWebSocket> {
 			LOGGER.warn("Connection Closed for {}", serverWebSocket.remoteAddress());
 			keepAlive.interrupt();
 		})
-		.exceptionHandler(Throwable::printStackTrace)
+		.exceptionHandler(ex -> LOGGER.error("Unhandled exception in socket", ex))
 		.writeFinalTextFrame("Connected!");
 		keepAlive.start();
 	}

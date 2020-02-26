@@ -8,6 +8,15 @@ public abstract class AbstractMessageProcessor<T extends IMessage> implements IM
 	/**
 	 * {@link TypeToken} is written by google and is a way to capture the runtime type of T
 	 * despite type erasure. Its in @Beta phase, and is considered unstable...
+	 *
+	 * if I don't want to use this then I'd have to instantiate a message processor
+	 * like so:
+	 *
+	 * new AbstractMessageProcessor<Message>(Message.class) which I think is
+	 * messy and redundant...
+	 *
+	 * This also opens up the door to user error. i.e.
+	 * new AbstractMessageProcessor<Foo>(Bar.class);
 	 */
 	private final TypeToken<T> oToken;
 

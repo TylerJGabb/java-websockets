@@ -66,6 +66,7 @@ public class KeepAliveClient {
 				LOGGER.info("Recieved Unresolvable Buffer: '{}'", buf.toString());
 			}
 		}).writeTextMessage("Connected!");
+		aSocket.exceptionHandler(ex -> LOGGER.error("Unhandled exception in socket", ex));
 		oSocket = aSocket;
 	}
 	

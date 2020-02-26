@@ -37,6 +37,7 @@ public abstract class AbstractMessageDispatcher implements IMessageDispatcher {
 	public boolean dispatch(IMessage message) {
 		IMessageProcessor processor = oMessageProcessorMap.get(message.getClass());
 		if(processor != null){
+			//asynchronous here? maybe holds a queue of messages?
 			processor.process(message);
 			return true;
 		}

@@ -87,8 +87,65 @@ Client:
     because the client requests to connect, the server is just
     keeping an eye on the quality of the connection. 
     
-    IKeepAlive still has to be re-implemented though. 
-   
+    IKeepAlive still has to be re-implemented though.
+
+
+=   =   =   =   =   =   =   =   =   =   =   =   =   =   =   =   =   =   =   =   =   =
+Something I found out about WebSocket
+if you add a pong handler, and send a ping, then when the pong is sent back
+the pong handler is invoked AND an empty buffer passes through the handler.
+If you remove the pong handler, it no longer happens.
+
+You're going a little too hard into vertx and not really thinking about
+what you need.
+
+You could have a client server model, where the server will maintaina list of
+active websocket connections to clients, maintain and monitor those connections,
+attempt to re-establish them if they go down, or just terminate them
+
+I think it should be the client's responsibility to attempt to reconnect if the connection
+has been closed, that way, the server can just let go without worrying if it had
+done enough to maintain the connection, the client will just attempt to re-connect.
+if its never able to do so, then it's not a viable client.
+
+We could have another type of model, where the clients are all self sufficient,
+periodically polling for work when they are not busy, like sending a
+GET request to get the next bit of work to be done. But then we would have to
+periodically check if the current work has been cancelled...
+
+I think the client server modelis best
+
+server maintains a list of clients, those clients will attempt to restore lost connection
+to the server. The server can kick them out.
+
+Still not clear on who should maintain the connection quality? It was my original
+idea that the server would monitor the quality, and that if it dropped below
+some threshold that the client's connection would be closed...
+
+The server is the source of truth, it knows what work needs to be done
+and knows which of the connected clients are capable of carrying out
+said work. It can delegate that work via instructions sent as messages through the connection
+
+There's still some more work to be done with error handling when resolving buffers into messages, thrown exceptions
+aren't ever handled because of how anonymized everything is in the vertx framework, explicit exceptions need to be caught
+and logged at some high level to be able to see whats going wrong.
+
+A note on server side KeepAlive, this class is just responsible for pinging and handling pongs.
+its primarily checking how long its taking to receive a pong, this only checks latency.
+
+Resolving messages and dispatching them may need to be made asynchronous or a add a message queue...
+now I'm beginning to think we could use 0MQ or RMQ but i still don't know what those are... after some quick reading
+ZMQ attempts to solve the problem by working inside of a middle ground between raw TCP/UDP and Sockets
+To use ZMQ seems like theres a lot of boilerplate code I'd need to write, and they mention that
+its difficult to implement connection recovery, where I found it fairly simple with Vertx.
+
+Did a few tests of my own, bombarded the server with messages and faked a 1sec block, the server could not
+keep up, no telling what would happen if whatever internal queue was surpassed, messages would probably
+just be dropped.. suck not having internet and being able to open the documentation....
+
+My proposed solution is to introduce a queue and add to it when the buffer is recieved, the buffer itself would be
+added to the queue, several consumers could then consume the queue...
+
 
 
 
