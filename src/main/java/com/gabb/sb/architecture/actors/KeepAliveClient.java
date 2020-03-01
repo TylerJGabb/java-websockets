@@ -4,7 +4,7 @@ import ch.qos.logback.classic.Level;
 import com.gabb.sb.Util;
 import com.gabb.sb.architecture.factory.UtilFactory;
 import com.gabb.sb.architecture.messages.IMessage;
-import com.gabb.sb.architecture.messages.dispatching.IMessageDispatcher;
+import com.gabb.sb.architecture.messages.publish.IMessagePublisher;
 import com.gabb.sb.architecture.resolver.IMessageResolver;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
@@ -22,15 +22,15 @@ public class KeepAliveClient {
 	private final int oPort;
 	private String oUri;
 	private IMessageResolver oIMessageResolver;
-	private IMessageDispatcher oIMessageDispatcher;
+	private IMessagePublisher messagePublisher;
 	private WebSocket oSocket;
 
 	public void setResolver(IMessageResolver aResolver) {
 		oIMessageResolver = aResolver;
 	}
 
-	public void setoIMessageDispatcher(IMessageDispatcher aDispatcher) {
-		oIMessageDispatcher = aDispatcher;
+	public void setMessagePublisher(IMessagePublisher publisher) {
+		messagePublisher = publisher;
 	}
 
 	public KeepAliveClient(int port, String host) {
@@ -61,7 +61,7 @@ public class KeepAliveClient {
 		aSocket.handler(buf -> {
 			IMessage resolvedMessage = oIMessageResolver.resolve(buf);
 			if(resolvedMessage != null){
-				oIMessageDispatcher.dispatch(resolvedMessage);
+				messagePublisher.publish(resolvedMessage);
 			} else {
 				LOGGER.info("Recieved Unresolvable Buffer: '{}'", buf.toString());
 			}
@@ -87,7 +87,7 @@ public class KeepAliveClient {
 		Util.configureLoggersProgrammatically(Level.OFF);
 		KeepAliveClient client = new KeepAliveClient(Server.PORT, Server.HOST);
 		client.setResolver(UtilFactory.testJsonResolver());
-		client.setoIMessageDispatcher(UtilFactory.testDispatcher());
+		client.setMessagePublisher(UtilFactory.publisher());
 		client.connect();
 	}
 }

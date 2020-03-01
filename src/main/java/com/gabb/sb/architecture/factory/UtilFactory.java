@@ -2,9 +2,9 @@ package com.gabb.sb.architecture.factory;
 
 import com.gabb.sb.architecture.messages.MessageWithInteger;
 import com.gabb.sb.architecture.messages.MessageWithString;
-import com.gabb.sb.architecture.messages.processing.AbstractMessageProcessor;
-import com.gabb.sb.architecture.messages.dispatching.IMessageDispatcher;
-import com.gabb.sb.architecture.messages.dispatching.AbstractMessageDispatcher;
+import com.gabb.sb.architecture.messages.subscribe.AbstractMessageSubscriber;
+import com.gabb.sb.architecture.messages.publish.IMessagePublisher;
+import com.gabb.sb.architecture.messages.publish.AbstractMessagePublisher;
 import com.gabb.sb.architecture.resolver.IMessageResolver;
 import com.gabb.sb.architecture.resolver.AbstractMessageResolver;
 import com.gabb.sb.architecture.resolver.strategies.JsonMessageResolveStrategy;
@@ -24,12 +24,12 @@ public final class UtilFactory {
 	}
 
 	/**
-	 * Builds a dispatcher that can dispatch {@link MessageWithInteger} and {@link MessageWithString}
+	 * Builds a publisher with subscribers to {@link MessageWithInteger} and {@link MessageWithString}
 	 * @return
 	 */
-	public static IMessageDispatcher testDispatcher() {
-		IMessageDispatcher messageDispatcher = new AbstractMessageDispatcher() {};
-		messageDispatcher.registerMessageProcessor(new AbstractMessageProcessor<MessageWithString>() {
+	public static IMessagePublisher publisher() {
+		IMessagePublisher publisher = new AbstractMessagePublisher() {};
+		publisher.addSubscriber(new AbstractMessageSubscriber<MessageWithString>(MessageWithString.class) {
 
 			@Override
 			public void process(MessageWithString message) {
@@ -37,13 +37,13 @@ public final class UtilFactory {
 			}
 		});
 
-		messageDispatcher.registerMessageProcessor(new AbstractMessageProcessor<MessageWithInteger>() {
+		publisher.addSubscriber(new AbstractMessageSubscriber<MessageWithInteger>(MessageWithInteger.class) {
 
 			@Override
 			public void process(MessageWithInteger message) {
 				System.out.println("Got MessageWithInteger containing " + message.getTheInteger());
 			}
 		});
-		return messageDispatcher;
+		return publisher;
 	}
 }

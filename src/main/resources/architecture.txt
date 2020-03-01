@@ -146,6 +146,10 @@ just be dropped.. suck not having internet and being able to open the documentat
 My proposed solution is to introduce a queue and add to it when the buffer is recieved, the buffer itself would be
 added to the queue, several consumers could then consume the queue...
 
+I feel so dumb for not thinking of the pubsub nomenclature before, changed dispatcher/processor to pub/sub method
+also removed really messy type erasure token thing, and used more generics to enfore T to match Class<T>
+passed into constructor of AbstractMessageSubscriber to that compiler will catch mismatch.
+
 
 
 
