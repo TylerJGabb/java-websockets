@@ -151,6 +151,15 @@ also removed really messy type erasure token thing, and used more generics to en
 passed into constructor of AbstractMessageSubscriber to that compiler will catch mismatch.
 
 
+-   -   -   -   -   -   -   -   -   -   -   -
+see https://softwareengineering.stackexchange.com/questions/406117/how-do-you-resolve-a-byte-into-a-class-instance-in-a-way-that-doesnt-couple-t?noredirect=1#comment895254_406117
+I'm going to try and take a schema-oriented approach, without dependencies on POJOs or types, I'll just parse json that
+has been validated against a schema.
+
+https://json-schema.org/
+https://www.geeksforgeeks.org/parse-json-java/
+
+
 
 
 
