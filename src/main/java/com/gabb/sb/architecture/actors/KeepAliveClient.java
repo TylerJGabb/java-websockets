@@ -14,6 +14,8 @@ import io.vertx.core.http.WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Random;
+
 public class KeepAliveClient {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(KeepAliveClient.class);
@@ -41,7 +43,9 @@ public class KeepAliveClient {
 			LOGGER.info("MOCK: Received Start Test Message {}, {}. mocking 5 second test", stm.buildPath, stm.cucumberArgs);
 			try { Thread.sleep(5000); } catch (InterruptedException ignored) { }
 			LOGGER.info("MOCK: Sending TestRunnerFinished");
-			oSocket.writeBinaryMessage(oResolver.resolve(new TestRunnerFinished()));
+			String result = new Random().nextBoolean() ? "FAIL" : "PASS";
+			TestRunnerFinished message = new TestRunnerFinished(result, "server:/home/mms/ftp/yaddayadda");
+			oSocket.writeBinaryMessage(oResolver.resolve(message));
 		}).start()).build();
 	}
 

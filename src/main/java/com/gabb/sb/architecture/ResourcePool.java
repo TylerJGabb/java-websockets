@@ -21,14 +21,15 @@ public class ResourcePool {
 
 	public void add(ServerWebSocket sock){
 		var client = new ServerTestRunner(sock);
-		var address = sock.remoteAddress();
 		sock.closeHandler(__ -> {
 			oTestRunners.remove(client);
-			LOGGER.info("WebSocket {} closed and has been removed from the resource pool", address);
+			//this makes me want to call is event bus...
+			LOGGER.info("MOCK: Insert into main message queue that the run assigned to {} is to be deleted", client);
+			LOGGER.info("Client {} closed and has been removed from the resource pool", client);
 		});
-		sock.exceptionHandler(ex -> LOGGER.error("Unhandled exception in socket {}", address, ex));
+		sock.exceptionHandler(ex -> LOGGER.error("Unhandled exception in socket {}", client, ex));
 		oTestRunners.add(client);
-		LOGGER.info("WebSocket {} connected and is now available in the resource pool", address);
+		LOGGER.info("Client {} connected and is now available in the resource pool", client);
 	}
 
 	/**

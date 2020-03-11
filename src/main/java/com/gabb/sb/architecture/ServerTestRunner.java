@@ -5,7 +5,6 @@ import com.gabb.sb.architecture.messages.StartTestMessage;
 import com.gabb.sb.architecture.messages.TestRunnerFinished;
 import com.gabb.sb.architecture.messages.publish.AbstractMessagePublisher;
 import com.gabb.sb.architecture.messages.publish.IMessagePublisher;
-import com.gabb.sb.architecture.messages.subscribe.AbstractMessageSubscriber;
 import com.gabb.sb.architecture.resolver.IMessageResolver;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.ServerWebSocket;
@@ -68,5 +67,10 @@ public class ServerTestRunner {
 
 	public String getStatus() {
 		return oStatus;
+	}
+
+	@Override
+	public String toString() {
+		return "ServerTestRunner{" + "oSock=" + oSock + ", oStatus='" + oStatus + '\'' + '}';
 	}
 }

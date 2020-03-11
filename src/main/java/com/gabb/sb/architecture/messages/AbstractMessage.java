@@ -4,10 +4,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public abstract class AbstractMessage implements IMessage {
 
-	@JsonProperty
+	@JsonProperty("source")
 	String oSource;
 	
-	@JsonProperty
+	@JsonProperty("destination")
 	String oDestination;
 	
 	public void setSource(String aSource) {
