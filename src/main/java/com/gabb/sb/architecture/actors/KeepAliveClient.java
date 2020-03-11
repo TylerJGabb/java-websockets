@@ -85,7 +85,7 @@ public class KeepAliveClient {
 	 */
 	public static void main(String[] args) {
 		Util.configureLoggersProgrammatically(Level.OFF);
-		KeepAliveClient client = new KeepAliveClient(Server.PORT, Server.HOST);
+		var client = new KeepAliveClient(Server.PORT, Server.HOST);
 		client.setResolver(UtilFactory.testJsonResolver());
 		client.setMessagePublisher(UtilFactory.publisher());
 		client.connect();

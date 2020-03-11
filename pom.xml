@@ -8,8 +8,8 @@
     <name>websocket-sb</name>
 
     <properties>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>13</maven.compiler.target>
+        <maven.compiler.source>13</maven.compiler.source>
         <slf4jVersion>1.7.25</slf4jVersion>
         <log4jVersion>1.2.17</log4jVersion>
         <logback-classic.version>1.0.13</logback-classic.version>
@@ -52,12 +52,5 @@
             <artifactId>vertx-core</artifactId>
             <version>3.7.0</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>com.google.guava</groupId>-->
-<!--            <artifactId>guava</artifactId>-->
-<!--            <version>20.0</version>-->
-<!--        </dependency>-->
-
-
     </dependencies>
 </project>
