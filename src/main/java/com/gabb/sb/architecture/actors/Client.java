@@ -1,8 +1,8 @@
 package com.gabb.sb.architecture.actors;
 
 import ch.qos.logback.classic.Level;
-import com.gabb.sb.Util;
-import com.gabb.sb.architecture.factory.UtilFactory;
+import com.gabb.sb.architecture.Util;
+import com.gabb.sb.architecture.Server;
 import com.gabb.sb.architecture.messages.MessageWithInteger;
 import com.gabb.sb.architecture.messages.MessageWithString;
 import com.gabb.sb.architecture.resolver.IMessageResolver;
@@ -29,7 +29,7 @@ public class Client {
 	private static HttpClient cClient;
 	public static void main(String[] args) {
 		Util.configureLoggersProgrammatically(Level.INFO);
-		IMessageResolver mCResolver = UtilFactory.testJsonResolver();
+		IMessageResolver mCResolver = Util.testJsonResolver();
 		cClient = Vertx.vertx().createHttpClient();
 		cBuffers = new Buffer[]{
 				mCResolver.resolve(new MessageWithInteger(123)),

@@ -2,7 +2,7 @@ package com.gabb.sb.architecture.messages;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class MessageWithString implements IMessage {
+public class MessageWithString extends AbstractMessage {
 
 	@JsonProperty("string")
 	String oString;

@@ -1,9 +1,10 @@
 package com.gabb.sb.architecture.actors;
 
-import ch.qos.logback.classic.Level;
-import com.gabb.sb.Util;
-import com.gabb.sb.architecture.factory.UtilFactory;
+import com.gabb.sb.architecture.Util;
 import com.gabb.sb.architecture.messages.IMessage;
+import com.gabb.sb.architecture.messages.StartTestMessage;
+import com.gabb.sb.architecture.messages.TestRunnerFinished;
+import com.gabb.sb.architecture.messages.publish.AbstractMessagePublisher;
 import com.gabb.sb.architecture.messages.publish.IMessagePublisher;
 import com.gabb.sb.architecture.resolver.IMessageResolver;
 import io.vertx.core.Vertx;
@@ -20,20 +21,14 @@ public class KeepAliveClient {
 	private final HttpClient oHttpClient;
 	private final String oHost;
 	private final int oPort;
+	private final IMessagePublisher oPublisher;
 	private String oUri;
-	private IMessageResolver oIMessageResolver;
-	private IMessagePublisher messagePublisher;
 	private WebSocket oSocket;
-
-	public void setResolver(IMessageResolver aResolver) {
-		oIMessageResolver = aResolver;
-	}
-
-	public void setMessagePublisher(IMessagePublisher publisher) {
-		messagePublisher = publisher;
-	}
+	private IMessageResolver oResolver;
 
 	public KeepAliveClient(int port, String host) {
+		oResolver = Util.testJsonResolver();
+		oPublisher = getPublisher();
 		oHttpClient = Vertx.vertx().createHttpClient();
 		oHttpClient.connectionHandler(this::onHttpConnectionEstablished);
 		oPort = port;
@@ -41,38 +36,51 @@ public class KeepAliveClient {
 		oUri = "/";
 	}
 
+	private IMessagePublisher getPublisher() {
+		return AbstractMessagePublisher.builder().addSubscriber(StartTestMessage.class, stm -> new Thread(() -> {
+			LOGGER.info("MOCK: Received Start Test Message {}, {}. mocking 5 second test", stm.buildPath, stm.cucumberArgs);
+			try { Thread.sleep(5000); } catch (InterruptedException ignored) { }
+			LOGGER.info("MOCK: Sending TestRunnerFinished");
+			oSocket.writeBinaryMessage(oResolver.resolve(new TestRunnerFinished()));
+		}).start()).build();
+	}
+
 	public KeepAliveClient(String aHost, int aPort, String aUri) {
 		this(aPort, aHost);
 		oUri = aUri;
 	}
 
-	void onHttpConnectionEstablished(HttpConnection aConn){
+	private void onHttpConnectionEstablished(HttpConnection aConn){
 		LOGGER.info("Http Connection Established {}", aConn);
 		//doesn't seem to be called...
 		
 	}
 	
-	void onWebSocketConnected(WebSocket aSocket){
+	private void onWebSocketConnected(WebSocket aSocket){
 		LOGGER.info("WebSocket Connected {}", aSocket);
 		aSocket.closeHandler(__ -> {
 			LOGGER.info("WebSocket Closed {}. Reconnecting", aSocket);
 			connect();
 		});
+		
 		aSocket.handler(buf -> {
-			IMessage resolvedMessage = oIMessageResolver.resolve(buf);
+			IMessage resolvedMessage = oResolver.resolve(buf);
 			if(resolvedMessage != null){
-				messagePublisher.publish(resolvedMessage);
+				oPublisher.publish(resolvedMessage);
 			} else {
 				LOGGER.info("Recieved Unresolvable Buffer: '{}'", buf.toString());
 			}
-		}).writeTextMessage("Connected!");
+		});
 		aSocket.exceptionHandler(ex -> LOGGER.error("Unhandled exception in socket", ex));
 		oSocket = aSocket;
 	}
 	
-	void onWebSocketFailedToConnect(Throwable aThrowable){
-		LOGGER.error("WebSocket Failed to Connect: {}. Retrying", aThrowable.getMessage());
-		connect();
+	private void onWebSocketFailedToConnect(Throwable aThrowable){
+		new Thread(() -> {
+			LOGGER.error("WebSocket Failed to Connect: {}. Retrying in 1500ms", aThrowable.getMessage());
+			try { Thread.sleep(1500); } catch (InterruptedException aE) { return; }
+			connect();
+		}).start();
 	}
 	
 
@@ -80,14 +88,4 @@ public class KeepAliveClient {
 		oHttpClient.websocket(oPort, oHost, oUri, this::onWebSocketConnected, this::onWebSocketFailedToConnect);
 	}
 
-	/**
-	 * TODO: GET RID OF THIS!!!
-	 */
-	public static void main(String[] args) {
-		Util.configureLoggersProgrammatically(Level.OFF);
-		var client = new KeepAliveClient(Server.PORT, Server.HOST);
-		client.setResolver(UtilFactory.testJsonResolver());
-		client.setMessagePublisher(UtilFactory.publisher());
-		client.connect();
-	}
 }

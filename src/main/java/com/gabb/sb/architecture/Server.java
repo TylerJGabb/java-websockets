@@ -1,12 +1,7 @@
-package com.gabb.sb.architecture.actors;
+package com.gabb.sb.architecture;
 
 
 import ch.qos.logback.classic.Level;
-import com.gabb.sb.Util;
-import com.gabb.sb.architecture.messages.publish.IMessagePublisher;
-import com.gabb.sb.architecture.resolver.IMessageResolver;
-import com.gabb.sb.architecture.factory.UtilFactory;
-import com.gabb.sb.architecture.websocket.ServerWebSocketHandler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import org.slf4j.Logger;
@@ -28,16 +23,29 @@ public class Server {
 	
 	public static final String HOST = "localhost";
 	public static final int PORT = 8080;
+	private static ResourcePool cPool;
 
 	public static void main(String[] args) {
 		Util.configureLoggersProgrammatically(Level.INFO);
 		Vertx vertx = Vertx.vertx();
 		HttpServer server = vertx.createHttpServer();
-		IMessageResolver resolver = UtilFactory.testJsonResolver();
-		IMessagePublisher publisher = UtilFactory.publisher();
-		ServerWebSocketHandler handler = new ServerWebSocketHandler().setResolver(resolver).setPublisher(publisher);
-		server.websocketHandler(handler).listen(PORT, HOST);
+		cPool = new ResourcePool();
+		server.websocketHandler(cPool::add).listen(PORT, HOST);
 		LOGGER.info("Listening on {}:{}", HOST, server.actualPort());
+		new Thread(()  -> {
+			while(true) try {
+				Thread.sleep(1500);
+				cPool.visit(tr -> {
+					if("IDLE".equals(tr.getStatus())) {
+						tr.startTest(null);
+						return true;
+					}
+					return false;
+				});
+			} catch (InterruptedException aE) {
+				aE.printStackTrace();
+			}
+		}).start();
 	}
 }
 
