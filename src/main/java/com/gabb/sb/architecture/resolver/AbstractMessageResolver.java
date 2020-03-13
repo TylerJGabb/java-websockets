@@ -9,11 +9,12 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 
 public abstract class AbstractMessageResolver implements IMessageResolver {
-	
+
+	public static final int BYTES_PER_INT = Integer.SIZE / Byte.SIZE;
 	private HashMap<Integer, Class<? extends IMessage>> oCodeToTypeMap;
 	private HashMap<Class<? extends IMessage>, Integer> oTypeToCodeMap;
 	private IMessageResolveStrategy oStrategy;
-	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractMessageResolver.class);
+	private final Logger oLogger;
 	
 	public static IMessageResolver resolver(){
 		return new AbstractMessageResolver(){};
@@ -21,6 +22,7 @@ public abstract class AbstractMessageResolver implements IMessageResolver {
 	
 
 	public AbstractMessageResolver() {
+		oLogger = LoggerFactory.getLogger(this.getClass());
 		oCodeToTypeMap = new HashMap<>();
 		oTypeToCodeMap = new HashMap<>();
 	}
@@ -34,16 +36,20 @@ public abstract class AbstractMessageResolver implements IMessageResolver {
 	public IMessage resolve(Buffer buf) {
 		try {
 			//what if can't read int?
+			oLogger.info("Resolving raw buffer '{}'", buf);
 			int mTypeCode = buf.getInt(0);
 			Class<? extends IMessage> clazz = oCodeToTypeMap.get(mTypeCode);
-			if(clazz == null) return null; //i think returning null hides, things, should throw exception?
-			Buffer payloadSection = buf.getBuffer(Integer.SIZE / Byte.SIZE, buf.length());
+			if(clazz == null) {
+				oLogger.warn("Attempted to resolve unregistered type code {}", mTypeCode);
+				return null; //TODO: i think returning null hides, things, should throw exception?
+			}
+			Buffer payloadSection = buf.getBuffer(BYTES_PER_INT, buf.length());
 			return oStrategy.deSerialize(payloadSection, clazz); //exception might be thrown here too... runtime...
 			//maybe good practice here would be to catch exception, log it, then return null.
 			//the returned null could be a signal to the client that something went wrong,
 			//and the exception would appear in logs...
 		} catch (Exception e) {
-			LOGGER.error("Unhandled exception while resolving '{}'", buf, e);
+			oLogger.error("Unhandled exception while resolving '{}'", buf, e);
 			return null;
 		}
 	}
@@ -51,7 +57,10 @@ public abstract class AbstractMessageResolver implements IMessageResolver {
 	@Override
 	public Buffer resolve(IMessage message) {
 		Integer typeCode = oTypeToCodeMap.get(message.getClass());
-		if(typeCode == null) return null;
+		if(typeCode == null) {
+			oLogger.warn("Attempted to resolve unregistered message {}", message.getClass());
+			return null;
+		}
 		Buffer writeTo = Buffer.buffer();
 		writeTo.appendInt(typeCode);
 		oStrategy.serialize(writeTo, message);

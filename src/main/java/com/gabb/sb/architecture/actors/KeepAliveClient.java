@@ -3,7 +3,7 @@ package com.gabb.sb.architecture.actors;
 import com.gabb.sb.architecture.Util;
 import com.gabb.sb.architecture.messages.IMessage;
 import com.gabb.sb.architecture.messages.StartTestMessage;
-import com.gabb.sb.architecture.messages.TestRunnerFinished;
+import com.gabb.sb.architecture.messages.TestRunnerFinishedMessage;
 import com.gabb.sb.architecture.messages.publish.AbstractMessagePublisher;
 import com.gabb.sb.architecture.messages.publish.IMessagePublisher;
 import com.gabb.sb.architecture.resolver.IMessageResolver;
@@ -38,20 +38,21 @@ public class KeepAliveClient {
 		oUri = "/";
 	}
 
-	private IMessagePublisher getPublisher() {
-		return AbstractMessagePublisher.builder().addSubscriber(StartTestMessage.class, stm -> new Thread(() -> {
-			LOGGER.info("MOCK: Received Start Test Message {}, {}. mocking 5 second test", stm.buildPath, stm.cucumberArgs);
-			try { Thread.sleep(5000); } catch (InterruptedException ignored) { }
-			LOGGER.info("MOCK: Sending TestRunnerFinished");
-			String result = new Random().nextBoolean() ? "FAIL" : "PASS";
-			TestRunnerFinished message = new TestRunnerFinished(result, "server:/home/mms/ftp/yaddayadda");
-			oSocket.writeBinaryMessage(oResolver.resolve(message));
-		}).start()).build();
-	}
-
 	public KeepAliveClient(String aHost, int aPort, String aUri) {
 		this(aPort, aHost);
 		oUri = aUri;
+	}
+
+	private IMessagePublisher getPublisher() {
+		return AbstractMessagePublisher.builder().addSubscriber(StartTestMessage.class, stm -> new Thread(() -> {
+			LOGGER.info("MOCK: Starting test for run  {}. mocking 5 second test", stm.runId);
+			try { Thread.sleep(5000); } catch (InterruptedException ignored) { }
+			LOGGER.info("MOCK: Sending TestRunnerFinishedMessage for runId {}", stm.runId);
+			String result = new Random().nextBoolean() ? "FAIL" : "PASS";
+			TestRunnerFinishedMessage message =
+					new TestRunnerFinishedMessage(result, "server:/home/mms/ftp/yaddayadda", stm.runId);
+			oSocket.writeBinaryMessage(oResolver.resolve(message));
+		}).start()).build();
 	}
 
 	private void onHttpConnectionEstablished(HttpConnection aConn){

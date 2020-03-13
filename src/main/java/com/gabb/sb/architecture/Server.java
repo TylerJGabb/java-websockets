@@ -7,6 +7,8 @@ import io.vertx.core.http.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Random;
+
 
 /**
  * Writing a web socket
@@ -33,11 +35,15 @@ public class Server {
 		server.websocketHandler(cPool::add).listen(PORT, HOST);
 		LOGGER.info("Listening on {}:{}", HOST, server.actualPort());
 		new Thread(()  -> {
+			/**
+			 * In Reality, this will be done in serial, updating the database
+			 * before allocation
+			 */
 			while(true) try {
-				Thread.sleep(1500);
+				Thread.sleep(500);
 				cPool.visit(tr -> {
 					if("IDLE".equals(tr.getStatus())) {
-						tr.startTest(null);
+						tr.startTest(new Run(new Random().nextInt()));
 						return true;
 					}
 					return false;
