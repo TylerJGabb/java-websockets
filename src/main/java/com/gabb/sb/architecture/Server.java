@@ -18,6 +18,7 @@ import java.util.Random;
  * https://en.wikipedia.org/wiki/Augmented_Backus%E2%80%93Naur_form
  * https://chrome.google.com/webstore/detail/smart-websocket-client/omalebghpgejjiaoknljcfmglgbpocdp?utm_source=chrome-app-launcher-info-dialog
  * https://vertx.io/docs/vertx-core/java/#_websockets
+ * reactive-streams: http://www.reactive-streams.org/
  */
 public class Server {
 
