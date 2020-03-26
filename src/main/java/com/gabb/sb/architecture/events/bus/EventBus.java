@@ -1,5 +1,7 @@
-package com.gabb.sb.architecture.events;
+package com.gabb.sb.architecture.events.bus;
 
+import com.gabb.sb.architecture.events.bus.listener.EventListener;
+import com.gabb.sb.architecture.events.bus.listener.IEventListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,7 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @SuppressWarnings("unchecked")
 public class EventBus implements IEventBus {
 
-	
 	private final Logger oLogger;
 	private final ConcurrentHashMap<Class<? extends IEvent>, List<IEventListener>> oListenerMap;
 
@@ -38,6 +39,38 @@ public class EventBus implements IEventBus {
 		var listeners = oListenerMap.get(aIEventListener.getEventType());
 		if (listeners == null) return;
 		listeners.remove(aIEventListener);
+	}
+	
+	public static Builder builder(){
+		return new Builder();
+	}
+	
+	public static class Builder{
+		
+		private IEventBus oInstance;
+
+		public Builder() {
+			oInstance = new EventBus();
+		}
+		
+		public <E extends IEvent> Builder addListener(Class<E> aClass, IEventHandler<E> aHandler){
+			oInstance.addListener(new EventListener<>(aClass) {
+				@Override
+				public void handleEvent(E aEvent) {
+					aHandler.handle(aEvent);
+				}
+			});
+			return this;
+		}
+		
+		public static interface IEventHandler<E> {
+			void handle(E e);
+		}
+		
+		public IEventBus build(){
+			return oInstance;
+		}
+			
 	}
 
 }

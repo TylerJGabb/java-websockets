@@ -1,17 +1,12 @@
 package com.gabb.sb.architecture;
 
 import ch.qos.logback.classic.Level;
-import com.gabb.sb.architecture.messages.MessageWithInteger;
-import com.gabb.sb.architecture.messages.MessageWithString;
-import com.gabb.sb.architecture.messages.StartTestMessage;
-import com.gabb.sb.architecture.messages.StopTestMessage;
-import com.gabb.sb.architecture.messages.TestRunnerFinishedMessage;
-import com.gabb.sb.architecture.messages.publish.AbstractMessagePublisher;
-import com.gabb.sb.architecture.messages.publish.IMessagePublisher;
-import com.gabb.sb.architecture.messages.subscribe.AbstractMessageSubscriber;
-import com.gabb.sb.architecture.resolver.AbstractMessageResolver;
-import com.gabb.sb.architecture.resolver.IMessageResolver;
-import com.gabb.sb.architecture.resolver.strategies.JsonMessageResolveStrategy;
+import com.gabb.sb.architecture.events.concretes.StartTestEvent;
+import com.gabb.sb.architecture.events.concretes.StopTestEvent;
+import com.gabb.sb.architecture.events.concretes.TestRunnerFinishedEvent;
+import com.gabb.sb.architecture.events.resolver.AbstractEventResolver;
+import com.gabb.sb.architecture.events.resolver.IEventResolver;
+import com.gabb.sb.architecture.events.resolver.strategies.JsonEventResolveStrategy;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
@@ -38,17 +33,17 @@ public class Util {
 	/**
 	 *	Builds a *NEW* Json Resolver that can resolve: 
 	 * <pre>
-	 *     {@link TestRunnerFinishedMessage}
-	 *     {@link StartTestMessage}
-	 *     {@link StopTestMessage}
+	 *     {@link TestRunnerFinishedEvent}
+	 *     {@link StartTestEvent}
+	 *     {@link StopTestEvent}
 	 * </pre>	
 	 */
-	public static IMessageResolver testJsonResolver() {
-		IMessageResolver mResolver = AbstractMessageResolver.resolver();
-		mResolver.setStrategy(new JsonMessageResolveStrategy());
-		mResolver.registerTypeCode(TestRunnerFinishedMessage.class, 0x03);
-		mResolver.registerTypeCode(StartTestMessage.class, 0x04);
-		mResolver.registerTypeCode(StopTestMessage.class, 0x05);
+	public static IEventResolver testJsonResolver() {
+		IEventResolver mResolver = AbstractEventResolver.resolver();
+		mResolver.setStrategy(new JsonEventResolveStrategy());
+		mResolver.registerTypeCode(TestRunnerFinishedEvent.class, 0x03);
+		mResolver.registerTypeCode(StartTestEvent.class, 0x04);
+		mResolver.registerTypeCode(StopTestEvent.class, 0x05);
 		return mResolver;
 	}
 }

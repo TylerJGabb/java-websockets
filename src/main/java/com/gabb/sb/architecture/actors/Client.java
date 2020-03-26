@@ -3,9 +3,9 @@ package com.gabb.sb.architecture.actors;
 import ch.qos.logback.classic.Level;
 import com.gabb.sb.architecture.Util;
 import com.gabb.sb.architecture.Server;
-import com.gabb.sb.architecture.messages.MessageWithInteger;
-import com.gabb.sb.architecture.messages.MessageWithString;
-import com.gabb.sb.architecture.resolver.IMessageResolver;
+import com.gabb.sb.architecture.events.concretes.EventWithInteger;
+import com.gabb.sb.architecture.events.concretes.EventWithString;
+import com.gabb.sb.architecture.events.resolver.IEventResolver;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
@@ -29,11 +29,11 @@ public class Client {
 	private static HttpClient cClient;
 	public static void main(String[] args) {
 		Util.configureLoggersProgrammatically(Level.INFO);
-		IMessageResolver mCResolver = Util.testJsonResolver();
+		IEventResolver mCResolver = Util.testJsonResolver();
 		cClient = Vertx.vertx().createHttpClient();
 		cBuffers = new Buffer[]{
-				mCResolver.resolve(new MessageWithInteger(123)),
-				mCResolver.resolve(new MessageWithString("I did it!")),
+				mCResolver.resolve(new EventWithInteger(123)),
+				mCResolver.resolve(new EventWithString("I did it!")),
 				Buffer.buffer("I am not resolvable! I am a generic text message")
 		};
 		connect();

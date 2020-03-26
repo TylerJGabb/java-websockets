@@ -1,4 +1,6 @@
-package com.gabb.sb.architecture.events;
+package com.gabb.sb.architecture.events.bus;
+
+import com.gabb.sb.architecture.events.bus.listener.IEventListener;
 
 public interface IEventBus {
 	

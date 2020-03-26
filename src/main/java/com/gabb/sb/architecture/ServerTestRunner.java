@@ -1,16 +1,14 @@
 package com.gabb.sb.architecture;
 
-import com.gabb.sb.architecture.messages.StartTestMessage;
-import com.gabb.sb.architecture.messages.TestRunnerFinishedMessage;
-import com.gabb.sb.architecture.messages.publish.AbstractMessagePublisher;
-import com.gabb.sb.architecture.messages.publish.IMessagePublisher;
-import com.gabb.sb.architecture.resolver.IMessageResolver;
+import com.gabb.sb.architecture.events.bus.EventBus;
+import com.gabb.sb.architecture.events.bus.IEventBus;
+import com.gabb.sb.architecture.events.concretes.StartTestEvent;
+import com.gabb.sb.architecture.events.concretes.TestRunnerFinishedEvent;
+import com.gabb.sb.architecture.events.resolver.IEventResolver;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.ServerWebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Random;
 
 
 /**
@@ -20,8 +18,8 @@ public class ServerTestRunner {
 
 	private final Logger oLogger;
 	private final ServerWebSocket oSock;
-	private final IMessageResolver oResolver;
-	private final IMessagePublisher oPublisher;
+	private final IEventResolver oResolver;
+	private final IEventBus oEventBus;
 	private volatile String oStatus;
 	private Integer oRunId;
 
@@ -33,15 +31,15 @@ public class ServerTestRunner {
 		oStatus = "WAITING FOR STATUS";
 		oLogger = LoggerFactory.getLogger("ServerTestRunner-" + aSock.remoteAddress());
 		oResolver = Util.testJsonResolver();
-		oPublisher = getPublisher();
+		oEventBus = getEventBus();
 		oSock = aSock;
 		aSock.handler(this::handle);
 		oStatus = "IDLE";
 	}
 
-	private IMessagePublisher getPublisher() {
-		return AbstractMessagePublisher.builder()
-				.addSubscriber(TestRunnerFinishedMessage.class, trf -> {
+	private IEventBus getEventBus() {
+		return EventBus.builder()
+				.addListener(TestRunnerFinishedEvent.class, trf -> {
 					if (!oRunId.equals(trf.runId)) {
 						oLogger.warn("Received TestRunnerFinishedMessaged with out of date runId. Ignoring...");
 					} else {
@@ -55,7 +53,7 @@ public class ServerTestRunner {
 	private void handle(Buffer aBuf) {
 		//how are we going to get access to main message queue? composition?... decide later
 		var msg = oResolver.resolve(aBuf);
-		oPublisher.publish(msg);
+		oEventBus.push(msg);
 		oLogger.info("MOCK: Putting Resolved Message {} into EventBus", msg.getClass().getSimpleName());
 		
 	}
@@ -63,9 +61,9 @@ public class ServerTestRunner {
 	public void startTest(Run aRun){
 		//build message here from run to send through socket.
 		//for now send hard coded
-		oRunId = aRun.getId();
 		oStatus = "RUNNING";
-		var msg = new StartTestMessage("/home/mms/foo/bar/build.zip", "zip zap zop", aRun.getId());
+		oRunId = aRun.getId();
+		var msg = new StartTestEvent("/home/mms/foo/bar/build.zip", "zip zap zop", aRun.getId());
 		oSock.writeBinaryMessage(oResolver.resolve(msg));
 		oLogger.info("MOCK: Started Run {}", aRun.getId());
 	}

@@ -160,6 +160,14 @@ https://json-schema.org/
 https://www.geeksforgeeks.org/parse-json-java/
 
 
+-   -   -   -   -   -   -   -   -   -   -   -   -
+The KeepAliveClient is active on TestRunner side and can receive and send messages through dedicated socket
+
+fFr now, use singleton main event bus on server side for use with all events that need access to ORM and file system and other things
+
+Messages arrive to the ServerTestRunner, are processed lightly, and then submitted to main event bus for more expensive operation
+
+
 
 
 

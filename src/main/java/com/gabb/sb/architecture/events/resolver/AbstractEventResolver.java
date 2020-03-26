@@ -1,44 +1,44 @@
-package com.gabb.sb.architecture.resolver;
+package com.gabb.sb.architecture.events.resolver;
 
-import com.gabb.sb.architecture.messages.IMessage;
-import com.gabb.sb.architecture.resolver.strategies.IMessageResolveStrategy;
+import com.gabb.sb.architecture.events.bus.IEvent;
+import com.gabb.sb.architecture.events.resolver.strategies.IEventResolveStrategy;
 import io.vertx.core.buffer.Buffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 
-public abstract class AbstractMessageResolver implements IMessageResolver {
+public abstract class AbstractEventResolver implements IEventResolver {
 
 	public static final int BYTES_PER_INT = Integer.SIZE / Byte.SIZE;
-	private HashMap<Integer, Class<? extends IMessage>> oCodeToTypeMap;
-	private HashMap<Class<? extends IMessage>, Integer> oTypeToCodeMap;
-	private IMessageResolveStrategy oStrategy;
+	private HashMap<Integer, Class<? extends IEvent>> oCodeToTypeMap;
+	private HashMap<Class<? extends IEvent>, Integer> oTypeToCodeMap;
+	private IEventResolveStrategy oStrategy;
 	private final Logger oLogger;
 	
-	public static IMessageResolver resolver(){
-		return new AbstractMessageResolver(){};
+	public static IEventResolver resolver(){
+		return new AbstractEventResolver(){};
 	}
 	
 
-	public AbstractMessageResolver() {
+	public AbstractEventResolver() {
 		oLogger = LoggerFactory.getLogger(this.getClass());
 		oCodeToTypeMap = new HashMap<>();
 		oTypeToCodeMap = new HashMap<>();
 	}
 	
 	@Override
-	public void setStrategy(IMessageResolveStrategy strategy) {
+	public void setStrategy(IEventResolveStrategy strategy) {
 		oStrategy = strategy;
 	}
 
 	@Override
-	public IMessage resolve(Buffer buf) {
+	public IEvent resolve(Buffer buf) {
 		try {
 			//what if can't read int?
 			oLogger.info("Resolving raw buffer '{}'", buf);
 			int mTypeCode = buf.getInt(0);
-			Class<? extends IMessage> clazz = oCodeToTypeMap.get(mTypeCode);
+			Class<? extends IEvent> clazz = oCodeToTypeMap.get(mTypeCode);
 			if(clazz == null) {
 				oLogger.warn("Attempted to resolve unregistered type code {}", mTypeCode);
 				return null; //TODO: i think returning null hides, things, should throw exception?
@@ -55,7 +55,7 @@ public abstract class AbstractMessageResolver implements IMessageResolver {
 	}
 
 	@Override
-	public Buffer resolve(IMessage message) {
+	public Buffer resolve(IEvent message) {
 		Integer typeCode = oTypeToCodeMap.get(message.getClass());
 		if(typeCode == null) {
 			oLogger.warn("Attempted to resolve unregistered message {}", message.getClass());
@@ -68,7 +68,7 @@ public abstract class AbstractMessageResolver implements IMessageResolver {
 	}
 
 	@Override
-	public boolean registerTypeCode(Class<? extends IMessage> clazz, int code) {
+	public boolean registerTypeCode(Class<? extends IEvent> clazz, int code) {
 		if(oCodeToTypeMap.containsKey(code)) return false;
 		oCodeToTypeMap.put(code, clazz);
 		oTypeToCodeMap.put(clazz, code);

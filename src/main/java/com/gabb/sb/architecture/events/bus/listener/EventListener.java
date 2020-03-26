@@ -1,4 +1,6 @@
-package com.gabb.sb.architecture.events;
+package com.gabb.sb.architecture.events.bus.listener;
+
+import com.gabb.sb.architecture.events.bus.IEvent;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;

@@ -1,8 +1,9 @@
-package com.gabb.sb.architecture.messages;
+package com.gabb.sb.architecture.events.concretes;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.gabb.sb.architecture.events.bus.IEvent;
 
-public class StartTestMessage extends AbstractMessage {
+public class StartTestEvent implements IEvent {
 	
 	@JsonProperty
 	public String buildPath;
@@ -14,9 +15,9 @@ public class StartTestMessage extends AbstractMessage {
 	public Integer runId;
 	
 
-	public StartTestMessage() { }
+	public StartTestEvent() { }
 
-	public StartTestMessage(String aBuildPath, String aCucumberArgs, Integer aRunId) {
+	public StartTestEvent(String aBuildPath, String aCucumberArgs, Integer aRunId) {
 		buildPath = aBuildPath;
 		cucumberArgs = aCucumberArgs;
 		runId = aRunId;
