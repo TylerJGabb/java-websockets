@@ -19,7 +19,8 @@ public class ServerTestRunner {
 	private final Logger oLogger;
 	private final ServerWebSocket oSock;
 	private final IEventResolver oResolver;
-	private final IEventBus oEventBus;
+	private final IEventBus oLocalEventBus;
+	private final IEventBus oMainEventBus;
 	private volatile String oStatus;
 	private Integer oRunId;
 
@@ -31,16 +32,18 @@ public class ServerTestRunner {
 		oStatus = "WAITING FOR STATUS";
 		oLogger = LoggerFactory.getLogger("ServerTestRunner-" + aSock.remoteAddress());
 		oResolver = Util.testJsonResolver();
-		oEventBus = getEventBus();
+		oLocalEventBus = getLocalEventBus();
+		oMainEventBus = MainEventBus.getInstance();
 		oSock = aSock;
 		aSock.handler(this::handle);
 		oStatus = "IDLE";
 	}
 
-	private IEventBus getEventBus() {
+	private IEventBus getLocalEventBus() {
 		return EventBus.builder()
 				.addListener(TestRunnerFinishedEvent.class, trf -> {
 					if (!oRunId.equals(trf.runId)) {
+						//when can this happen?
 						oLogger.warn("Received TestRunnerFinishedMessaged with out of date runId. Ignoring...");
 					} else {
 						oLogger.info("TestRunnerFinished with runId: {}", trf.runId);
@@ -52,9 +55,10 @@ public class ServerTestRunner {
 
 	private void handle(Buffer aBuf) {
 		//how are we going to get access to main message queue? composition?... decide later
-		var msg = oResolver.resolve(aBuf);
-		oEventBus.push(msg);
-		oLogger.info("MOCK: Putting Resolved Message {} into EventBus", msg.getClass().getSimpleName());
+		var event = oResolver.resolve(aBuf);
+		oLocalEventBus.push(event);
+		oLogger.info("Putting Resolved Event {} into MainEventBus", event.getClass().getSimpleName());
+		oMainEventBus.push(event);
 		
 	}
 	
@@ -63,8 +67,10 @@ public class ServerTestRunner {
 		//for now send hard coded
 		oStatus = "RUNNING";
 		oRunId = aRun.getId();
-		var msg = new StartTestEvent("/home/mms/foo/bar/build.zip", "zip zap zop", aRun.getId());
-		oSock.writeBinaryMessage(oResolver.resolve(msg));
+		var event = new StartTestEvent("/home/mms/foo/bar/build.zip", "zip zap zop", aRun.getId());
+		oSock.writeBinaryMessage(oResolver.resolve(event));
+		//if successful
+		oMainEventBus.push(event);
 		oLogger.info("MOCK: Started Run {}", aRun.getId());
 	}
 

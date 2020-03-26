@@ -32,7 +32,7 @@ public class Server {
 		Util.configureLoggersProgrammatically(Level.INFO);
 		Vertx vertx = Vertx.vertx();
 		HttpServer server = vertx.createHttpServer();
-		cPool = new ResourcePool();
+		cPool = ResourcePool.getInstance();
 		server.websocketHandler(cPool::add).listen(PORT, HOST);
 		LOGGER.info("Listening on {}:{}", HOST, server.actualPort());
 		new Thread(()  -> {

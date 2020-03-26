@@ -34,6 +34,15 @@ public class EventBus implements IEventBus {
 		oListenerMap.get(eventType).add(aIEventListener);
 	}
 
+	public <E extends IEvent> void addListener(Class<E> aClass, IEventHandler<E> aHandler){
+		addListener(new EventListener<>(aClass) {
+			@Override
+			public void handleEvent(E aE) {
+				aHandler.handle(aE);
+			}
+		});
+	}
+
 	@Override
 	public void removeListener(IEventListener aIEventListener) {
 		var listeners = oListenerMap.get(aIEventListener.getEventType());
@@ -63,14 +72,15 @@ public class EventBus implements IEventBus {
 			return this;
 		}
 		
-		public static interface IEventHandler<E> {
-			void handle(E e);
-		}
-		
 		public IEventBus build(){
 			return oInstance;
 		}
 			
+	}
+
+	@FunctionalInterface
+	public static interface IEventHandler<E> {
+		void handle(E e);
 	}
 
 }

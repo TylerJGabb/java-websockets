@@ -17,8 +17,20 @@ public class ResourcePool {
 	private final ExecutorService oNewResouceExecutor;
 	private List<ServerTestRunner> oTestRunners;
 	private final ReentrantLock oCollectionLock;
+	private static ResourcePool oInstance;
 
-	public ResourcePool() {
+	public static ResourcePool getInstance() {
+		if (oInstance == null) {
+			synchronized (ResourcePool.class){
+				if(oInstance == null){
+					oInstance = new ResourcePool();
+				}
+			}
+		}
+		return oInstance;
+	}
+
+	private ResourcePool() {
 		oCollectionLock = new ReentrantLock(true);
 		oNewResouceExecutor = Executors.newSingleThreadExecutor();
 		oTestRunners = new ArrayList<>();
