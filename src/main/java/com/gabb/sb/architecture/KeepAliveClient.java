@@ -1,6 +1,5 @@
-package com.gabb.sb.architecture.actors;
+package com.gabb.sb.architecture;
 
-import com.gabb.sb.architecture.Util;
 import com.gabb.sb.architecture.events.bus.EventBus;
 import com.gabb.sb.architecture.events.bus.IEvent;
 import com.gabb.sb.architecture.events.bus.IEventBus;
