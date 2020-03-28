@@ -167,6 +167,65 @@ fFr now, use singleton main event bus on server side for use with all events tha
 
 Messages arrive to the ServerTestRunner, are processed lightly, and then submitted to main event bus for more expensive operation
 
+-   -   -   -   -   -   -   -   -   -   -   -   -   -   -       
+Under what circumstances is the database changed?
+
+We have a tree like structure
+
+Test Plan 1---->* Job 1---->* Run
+
+*** When a user stops an entire test plan, the test plan status is marked, and all incoming
+RunFinished events must be ignored for any jobs belonging to that test plan
+
+*** When a TestRunner finishes a run, the job  needs to be updated. 
+If the pass count > desired pass, or fail count > allowed failures, then the
+job status must be changed accordingly, and all resources free'd
+for that job. 
+
+*** When a run is started, a run is added for the job, and its status marked
+accordingly. The same run could not possibly come back while performing
+this update, but another run for the same job could come back
+that renders this job obsolete.
+
+*** When a run is stopped, this could happen if either the user stopped a test plan
+or if the TRM is freeing a resource
+
+BEFORE PROCESS
+A) Test Plan Stopped
+    1) free all resources in use and stop them
+    2) set run statuses to terminated
+
+In terms of priority, I think what follows is best
+
+1) RunFinishedEvent:
+	a) check parent job terminated
+	b) check failure type
+	c) set run status
+	d) job status updated
+		i) if job terminated, send stop signals to runners
+		ii) set run status of terminated runs to TERMINATED
+		
+2) RunStartedEvent
+	a) check parent job terminated
+	b) set test runner
+	c) set run status
+
+---
+AFTER PROCESS
+C) Update Test Plan Status
+D) Allocation
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

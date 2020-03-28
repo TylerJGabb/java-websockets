@@ -1,9 +1,9 @@
 package com.gabb.sb.architecture.events.concretes;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.gabb.sb.architecture.events.bus.IEvent;
+import com.gabb.sb.architecture.events.IEvent;
 
-public class StartTestEvent implements IEvent {
+public class StartRunEvent implements IEvent {
 	
 	@JsonProperty
 	public String buildPath;
@@ -15,11 +15,16 @@ public class StartTestEvent implements IEvent {
 	public Integer runId;
 	
 
-	public StartTestEvent() { }
+	public StartRunEvent() { }
 
-	public StartTestEvent(String aBuildPath, String aCucumberArgs, Integer aRunId) {
+	public StartRunEvent(String aBuildPath, String aCucumberArgs, Integer aRunId) {
 		buildPath = aBuildPath;
 		cucumberArgs = aCucumberArgs;
 		runId = aRunId;
+	}
+
+	@Override
+	public int getPriority() {
+		return 2;
 	}
 }

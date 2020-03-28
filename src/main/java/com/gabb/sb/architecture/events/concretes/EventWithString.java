@@ -1,7 +1,7 @@
 package com.gabb.sb.architecture.events.concretes;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.gabb.sb.architecture.events.bus.IEvent;
+import com.gabb.sb.architecture.events.IEvent;
 
 public class EventWithString implements IEvent {
 
@@ -17,4 +17,5 @@ public class EventWithString implements IEvent {
 	public String getString() {
 		return oString;
 	}
+
 }

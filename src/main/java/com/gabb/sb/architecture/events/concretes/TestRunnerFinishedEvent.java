@@ -1,7 +1,7 @@
 package com.gabb.sb.architecture.events.concretes;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.gabb.sb.architecture.events.bus.IEvent;
+import com.gabb.sb.architecture.events.IEvent;
 
 public class TestRunnerFinishedEvent implements IEvent {
 
@@ -21,4 +21,9 @@ public class TestRunnerFinishedEvent implements IEvent {
 	}
 
 	public TestRunnerFinishedEvent() { }
+
+	@Override
+	public int getPriority() {
+		return 1;
+	}
 }

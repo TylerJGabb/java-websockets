@@ -1,17 +1,16 @@
 package com.gabb.sb.architecture.events.bus.listener;
 
-import com.gabb.sb.architecture.events.bus.IEvent;
+import com.gabb.sb.architecture.events.IEvent;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public abstract class EventListener<E extends IEvent> implements IEventListener<E> {
+public abstract class AsyncEventListener<E extends IEvent> extends AbstractEventListener<E> {
 
-	private final Class<E> oEventType;
 	private final BlockingQueue<E> oQueue;
 
-	public EventListener(Class<E> aEventType) {
-		oEventType = aEventType;
+	public AsyncEventListener(Class<E> aEventType) {
+		super(aEventType);
 		oQueue = new LinkedBlockingQueue<>();
 		new Thread(){
 			@Override
@@ -25,12 +24,6 @@ public abstract class EventListener<E extends IEvent> implements IEventListener<
 		}.start();
 	}
 
-	@Override
-	public final Class<E> getEventType() {
-		return oEventType;
-	}
-
-	@Override
 	public final void queueEvent(E aE) {
 		oQueue.add(aE);
 	}

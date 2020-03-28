@@ -1,7 +1,7 @@
 package com.gabb.sb.architecture;
 
 import ch.qos.logback.classic.Level;
-import com.gabb.sb.architecture.events.concretes.StartTestEvent;
+import com.gabb.sb.architecture.events.concretes.StartRunEvent;
 import com.gabb.sb.architecture.events.concretes.StopTestEvent;
 import com.gabb.sb.architecture.events.concretes.TestRunnerFinishedEvent;
 import com.gabb.sb.architecture.events.resolver.AbstractEventResolver;
@@ -34,7 +34,7 @@ public class Util {
 	 *	Builds a *NEW* Json Resolver that can resolve: 
 	 * <pre>
 	 *     {@link TestRunnerFinishedEvent}
-	 *     {@link StartTestEvent}
+	 *     {@link StartRunEvent}
 	 *     {@link StopTestEvent}
 	 * </pre>	
 	 */
@@ -42,7 +42,7 @@ public class Util {
 		IEventResolver mResolver = AbstractEventResolver.resolver();
 		mResolver.setStrategy(new JsonEventResolveStrategy());
 		mResolver.registerTypeCode(TestRunnerFinishedEvent.class, 0x03);
-		mResolver.registerTypeCode(StartTestEvent.class, 0x04);
+		mResolver.registerTypeCode(StartRunEvent.class, 0x04);
 		mResolver.registerTypeCode(StopTestEvent.class, 0x05);
 		return mResolver;
 	}

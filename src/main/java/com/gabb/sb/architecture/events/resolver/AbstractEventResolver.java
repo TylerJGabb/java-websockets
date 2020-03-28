@@ -1,6 +1,6 @@
 package com.gabb.sb.architecture.events.resolver;
 
-import com.gabb.sb.architecture.events.bus.IEvent;
+import com.gabb.sb.architecture.events.IEvent;
 import com.gabb.sb.architecture.events.resolver.strategies.IEventResolveStrategy;
 import io.vertx.core.buffer.Buffer;
 import org.slf4j.Logger;

@@ -1,6 +1,6 @@
 package com.gabb.sb.architecture.events.resolver.strategies;
 
-import com.gabb.sb.architecture.events.bus.IEvent;
+import com.gabb.sb.architecture.events.IEvent;
 import io.vertx.core.buffer.Buffer;
 
 public interface IEventResolveStrategy {

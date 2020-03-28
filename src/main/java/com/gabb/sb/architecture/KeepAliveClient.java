@@ -1,9 +1,9 @@
 package com.gabb.sb.architecture;
 
-import com.gabb.sb.architecture.events.bus.EventBus;
-import com.gabb.sb.architecture.events.bus.IEvent;
+import com.gabb.sb.architecture.events.bus.ConcurrentEventBus;
+import com.gabb.sb.architecture.events.IEvent;
 import com.gabb.sb.architecture.events.bus.IEventBus;
-import com.gabb.sb.architecture.events.concretes.StartTestEvent;
+import com.gabb.sb.architecture.events.concretes.StartRunEvent;
 import com.gabb.sb.architecture.events.concretes.TestRunnerFinishedEvent;
 import com.gabb.sb.architecture.events.resolver.IEventResolver;
 import io.vertx.core.Vertx;
@@ -42,16 +42,20 @@ public class KeepAliveClient {
 		oUri = aUri;
 	}
 
-	private IEventBus getEventBus() {
-		return EventBus.builder().addListener(StartTestEvent.class, stm -> new Thread(() -> {
-			LOGGER.info("MOCK: Starting test for run  {}. mocking 5 second test", stm.runId);
+	private void startRun(StartRunEvent sre) {
+		new Thread(() -> {
+			LOGGER.info("MOCK: Starting test for run  {}. mocking 5 second test", sre.runId);
 			try { Thread.sleep(5000); } catch (InterruptedException ignored) { }
-			LOGGER.info("MOCK: Sending TestRunnerFinishedEvent for runId {}", stm.runId);
+			LOGGER.info("MOCK: Sending TestRunnerFinishedEvent for runId {}", sre.runId);
 			String result = new Random().nextBoolean() ? "FAIL" : "PASS";
 			TestRunnerFinishedEvent message =
-					new TestRunnerFinishedEvent(result, "server:/home/mms/ftp/yaddayadda", stm.runId);
+					new TestRunnerFinishedEvent(result, "server:/home/mms/ftp/yaddayadda", sre.runId);
 			oSocket.writeBinaryMessage(oResolver.resolve(message));
-		}).start()).build();
+		}).start();
+	}
+	
+	private IEventBus getEventBus() {
+		return ConcurrentEventBus.builder().addListener(StartRunEvent.class, this::startRun).build();
 	}
 
 	private void onHttpConnectionEstablished(HttpConnection aConn){
