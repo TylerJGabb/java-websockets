@@ -4,21 +4,36 @@ import com.gabb.sb.architecture.events.IEvent;
 import com.gabb.sb.architecture.events.bus.PrioritySyncEventBus;
 import com.gabb.sb.architecture.events.concretes.StartRunEvent;
 import com.gabb.sb.architecture.events.concretes.TestRunnerFinishedEvent;
+import com.gabb.sb.spring.TestEntity;
+import com.gabb.sb.spring.TestEntityRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import java.util.Date;
 import java.util.Random;
 
 /**
  * This event bus can potentially mutate database when processing events
  * Events are processed according to their {@link IEvent#getPriority()}
  */
+@Component
 public class DatabaseChangingEventBus extends PrioritySyncEventBus {
-	
+
+	private TestEntityRepository oTestEntityRepository;
+
+	@Autowired
+	public void setTestEntityRepository(TestEntityRepository repo){
+		oLogger.info("SET TEST ENT REPO");
+		oTestEntityRepository = repo;
+	}
+
 	private static DatabaseChangingEventBus oInstance;
-	
+
 	private DatabaseChangingEventBus(){
 		super();
 		addListener(TestRunnerFinishedEvent.class, this::testRunnerFinished);
 		addListener(StartRunEvent.class, this::testStarted);
+		oInstance = this;
 	}
 
 	@Override
@@ -48,6 +63,8 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 
 	private void testRunnerFinished(TestRunnerFinishedEvent aRunnerFinishedEvent){
 		oLogger.info("DCEB MOCK TestRunnerFinishedEvent for run {}", aRunnerFinishedEvent.runId);
+		TestEntity ent = new TestEntity(aRunnerFinishedEvent.getClass().getSimpleName() + " " + new Date().toLocaleString());
+		oTestEntityRepository.save(ent);
 	}
 	
 	private void testStarted(StartRunEvent aStartRunEvent){
@@ -55,13 +72,7 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 	}
 
 	public static DatabaseChangingEventBus getInstance() {
-		if(oInstance == null){
-			synchronized (DatabaseChangingEventBus.class){
-				if(oInstance == null){
-					oInstance = new DatabaseChangingEventBus();			
-				}
-			}
-		}
+		if(oInstance == null) throw new IllegalStateException("Instance not set yet");
 		return oInstance;
 	}
 }

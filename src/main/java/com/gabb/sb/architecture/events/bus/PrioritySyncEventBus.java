@@ -24,6 +24,7 @@ public abstract class PrioritySyncEventBus extends AbstractEventBus<SyncEventLis
 	}
 	
 	public void start(){
+		oLogger.info("DCEB STARTING");
 		oProcessLoopThread.start();
 	}
 	
