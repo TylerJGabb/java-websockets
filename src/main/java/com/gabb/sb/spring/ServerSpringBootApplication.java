@@ -5,6 +5,8 @@ import ch.qos.logback.classic.Level;
 import com.gabb.sb.architecture.DatabaseChangingEventBus;
 import com.gabb.sb.architecture.ResourcePool;
 import com.gabb.sb.architecture.Util;
+import com.gabb.sb.spring.entities.TestPlan;
+import com.gabb.sb.spring.repos.TestPlanRepo;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import org.slf4j.LoggerFactory;
@@ -25,10 +27,16 @@ public class ServerSpringBootApplication {
     public static void main(String[] args) {
         Util.configureLoggersProgrammatically(Level.INFO);
         var ctx = new SpringApplicationBuilder(ServerSpringBootApplication.class)
-                .web(WebApplicationType.NONE)
                 .properties("spring.config.name:server")
                 .build(args)
                 .run();
+
+        //TODO: DELETE THIS!!!!!!!!!#############################
+        //this is only for testing
+        var repo = ctx.getBean(TestPlanRepo.class);
+        var tp = new TestPlan(2);
+        repo.save(tp);
+        //#######################################################
 
         var dceb = ctx.getBean(DatabaseChangingEventBus.class);
         DatabaseChangingEventBus.getInstance().start();
