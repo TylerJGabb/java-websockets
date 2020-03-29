@@ -29,7 +29,7 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 	
 	@Override
 	protected void beforeProcessing() {
-		oLogger.info("DCEB ProcessManualTerminations");
+		oLogger.trace("DCEB ProcessManualTerminations");
 	}
 
 	@Override
@@ -37,8 +37,9 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 		oLogger.trace("DCEB TestPlanStatusUpdate");
 		ResourcePool.getInstance().visit(tr -> {
 			if("IDLE".equals(tr.getStatus())) {
-				tr.startTest(new Run(new Random().nextInt()));
-				oLogger.info("DCEB Resource Allocation");
+				Run run = new Run(new Random().nextInt());
+				tr.startTest(run);
+				oLogger.info("DCEB Resource Allocation: Started Run {} on {}", run.getId(), tr);
 				return true;
 			}
 			return false;

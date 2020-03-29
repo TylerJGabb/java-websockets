@@ -23,14 +23,13 @@ public class Server {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
 	
 	public static final String HOST = "localhost";
-	public static final int PORT = 8080;
-	private static ResourcePool cPool;
+	public static final int PORT = 8081;
 
 	public static void main(String[] args) {
 		Util.configureLoggersProgrammatically(Level.INFO);
 		Vertx vertx = Vertx.vertx();
 		HttpServer server = vertx.createHttpServer();
-		cPool = ResourcePool.getInstance();
+		ResourcePool cPool = ResourcePool.getInstance();
 		DatabaseChangingEventBus.getInstance().start();
 		server.websocketHandler(cPool::add).listen(PORT, HOST);
 		LOGGER.info("Listening on {}:{}", HOST, server.actualPort());

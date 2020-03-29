@@ -62,7 +62,6 @@ public class ServerTestRunner {
 		oLocalEventBus.push(event);
 		oLogger.info("Putting Resolved Event {} into DatabaseChangingEventBus", event.getClass().getSimpleName());
 		oMainEventBus.push(event);
-		
 	}
 	
 	public void startTest(Run aRun){
@@ -74,12 +73,11 @@ public class ServerTestRunner {
 		oSock.writeBinaryMessage(oResolver.resolve(event));
 		//if successful
 		oMainEventBus.push(event);
-		oLogger.info("Started Run {}", aRun.getId());
 	}
 	
 	public void stopTest(){
 		// set internal status
-		// submit event to MEB for database processing
+		// submit event to MEB for database processing (no?)
 	}
 
 	public String getStatus() {

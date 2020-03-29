@@ -50,7 +50,12 @@ public class KeepAliveClient {
 			String result = new Random().nextBoolean() ? "FAIL" : "PASS";
 			TestRunnerFinishedEvent message =
 					new TestRunnerFinishedEvent(result, "server:/home/mms/ftp/yaddayadda", sre.runId);
-			oSocket.writeBinaryMessage(oResolver.resolve(message));
+			try {
+				oSocket.writeBinaryMessage(oResolver.resolve(message));
+			} catch (Throwable th){
+				//can catch here and submit to queue of events to be sent once re-connected
+				th.printStackTrace();
+			}
 		}).start();
 	}
 	
@@ -70,7 +75,8 @@ public class KeepAliveClient {
 			LOGGER.info("WebSocket Closed {}. Reconnecting", aSocket);
 			connect();
 		});
-		
+
+
 		aSocket.handler(buf -> {
 			IEvent event = oResolver.resolve(buf);
 			if(event != null){
