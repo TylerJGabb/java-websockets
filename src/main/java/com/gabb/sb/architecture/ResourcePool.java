@@ -38,7 +38,9 @@ public class ResourcePool {
 
 
 	public void add(ServerWebSocket sock) {
-		var client = new ServerTestRunner(sock);
+		var headers = sock.headers();
+		var tags = headers.get("bench.tags");
+		var client = new ServerTestRunner(sock, tags);
 		sock.closeHandler(__ -> {
 			oTestRunners.remove(client); //lock
 			//this makes me want to call is event bus...

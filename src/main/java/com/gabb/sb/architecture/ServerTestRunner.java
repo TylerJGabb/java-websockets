@@ -10,6 +10,11 @@ import io.vertx.core.http.ServerWebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 
 /**
  * Represents a remote resource on server-side
@@ -23,19 +28,23 @@ public class ServerTestRunner {
 	private final IEventBus oMainEventBus;
 	private volatile String oStatus;
 	private Integer oRunId;
+	private List<String> oBenchTags;
 
-	public ServerTestRunner(ServerWebSocket aSock) {
+	public ServerTestRunner(ServerWebSocket aSock, String rawTags) {
 		// this class needs to be able to resolve messages.... Where is it going to get that resolver?
 		// it can't be shared, because it would cause multi-threading issues
 		// a new one would need to be created, but where do we get type codes?
 		// for now, let some util class take care of it...
+		oSock = aSock;
 		oStatus = "WAITING FOR STATUS";
 		oLogger = LoggerFactory.getLogger("ServerTestRunner-" + aSock.remoteAddress());
 		oResolver = Util.testJsonResolver();
 		oLocalEventBus = getLocalEventBus();
 		oMainEventBus = DatabaseChangingEventBus.getInstance();
-		oSock = aSock;
-		aSock.handler(this::handle);
+		oSock.handler(this::handle);
+		oBenchTags = rawTags == null || rawTags.strip().isEmpty()
+				? Collections.emptyList()
+				: Arrays.asList(rawTags.split(","));
 		oStatus = "IDLE";
 	}
 
@@ -48,6 +57,7 @@ public class ServerTestRunner {
 			oStatus = "IDLE";
 			oRunId = null;
 		}
+		oMainEventBus.push(trf);
 	}
 	
 	private IEventBus getLocalEventBus() {
@@ -57,11 +67,7 @@ public class ServerTestRunner {
 	}
 
 	private void handle(Buffer aBuf) {
-		//how are we going to get access to main message queue? composition?... decide later
-		var event = oResolver.resolve(aBuf);
-		oLocalEventBus.push(event);
-		oLogger.info("Putting Resolved Event {} into DatabaseChangingEventBus", event.getClass().getSimpleName());
-		oMainEventBus.push(event);
+		oLocalEventBus.push(oResolver.resolve(aBuf));
 	}
 	
 	public void startTest(Run aRun){
@@ -80,12 +86,20 @@ public class ServerTestRunner {
 		// submit event to MEB for database processing (no?)
 	}
 
+	public List<String> getTags() {
+		return new ArrayList<>(oBenchTags);
+	}
+
 	public String getStatus() {
 		return oStatus;
 	}
 
 	@Override
 	public String toString() {
-		return "ServerTestRunner{" + "oSock=" + oSock + ", oStatus='" + oStatus + '\'' + '}';
+		return "ServerTestRunner{" +
+				"oSock=" + oSock +
+				", oStatus='" + oStatus + '\'' +
+				", oBenchTags=" + oBenchTags +
+				'}';
 	}
 }

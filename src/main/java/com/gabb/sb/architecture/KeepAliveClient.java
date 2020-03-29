@@ -1,12 +1,13 @@
 package com.gabb.sb.architecture;
 
-import com.gabb.sb.architecture.events.bus.ConcurrentEventBus;
 import com.gabb.sb.architecture.events.IEvent;
+import com.gabb.sb.architecture.events.bus.ConcurrentEventBus;
 import com.gabb.sb.architecture.events.bus.IEventBus;
 import com.gabb.sb.architecture.events.concretes.StartRunEvent;
 import com.gabb.sb.architecture.events.concretes.TestRunnerFinishedEvent;
 import com.gabb.sb.architecture.events.resolver.IEventResolver;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.CaseInsensitiveHeaders;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.WebSocket;
@@ -23,6 +24,7 @@ public class KeepAliveClient {
 	private final String oHost;
 	private final int oPort;
 	private final IEventBus oEventBus;
+	private final String oBenchTags;
 	private String oUri;
 	private WebSocket oSocket;
 	private IEventResolver oResolver;
@@ -32,6 +34,7 @@ public class KeepAliveClient {
 		oEventBus = getEventBus();
 		oHttpClient = Vertx.vertx().createHttpClient();
 		oHttpClient.connectionHandler(this::onHttpConnectionEstablished);
+		oBenchTags = System.getProperty("bench.tags");
 		oPort = port;
 		oHost = host;
 		oUri = "/";
@@ -75,8 +78,6 @@ public class KeepAliveClient {
 			LOGGER.info("WebSocket Closed {}. Reconnecting", aSocket);
 			connect();
 		});
-
-
 		aSocket.handler(buf -> {
 			IEvent event = oResolver.resolve(buf);
 			if(event != null){
@@ -99,7 +100,9 @@ public class KeepAliveClient {
 	
 
 	public void connect(){
-		oHttpClient.websocket(oPort, oHost, oUri, this::onWebSocketConnected, this::onWebSocketFailedToConnect);
+		var multi = new CaseInsensitiveHeaders();
+		if(oBenchTags != null) multi.add("bench.tags", oBenchTags);
+		oHttpClient.websocket(oPort, oHost, oUri, multi, this::onWebSocketConnected, this::onWebSocketFailedToConnect);
 	}
 
 }

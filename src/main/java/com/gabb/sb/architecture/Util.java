@@ -36,6 +36,7 @@ public class Util {
 	 *     {@link TestRunnerFinishedEvent}
 	 *     {@link StartRunEvent}
 	 *     {@link StopTestEvent}
+	 *     {@link RegisterBenchTagsEvent}
 	 * </pre>	
 	 */
 	public static IEventResolver testJsonResolver() {
