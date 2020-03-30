@@ -3,10 +3,13 @@ package com.gabb.sb.architecture;
 import com.gabb.sb.architecture.events.bus.ConcurrentEventBus;
 import com.gabb.sb.architecture.events.bus.IEventBus;
 import com.gabb.sb.architecture.events.concretes.StartRunEvent;
+import com.gabb.sb.architecture.events.concretes.StopTestEvent;
 import com.gabb.sb.architecture.events.concretes.TestRunnerFinishedEvent;
 import com.gabb.sb.architecture.events.resolver.IEventResolver;
+import com.gabb.sb.spring.entities.Run;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.ServerWebSocket;
+import io.vertx.core.net.SocketAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +29,7 @@ public class ServerTestRunner {
 	private final IEventResolver oResolver;
 	private final IEventBus oLocalEventBus;
 	private final IEventBus oMainEventBus;
-	private volatile String oStatus;
+	private volatile Status oStatus;
 	private Integer oRunId;
 	private List<String> oBenchTags;
 
@@ -36,7 +39,7 @@ public class ServerTestRunner {
 		// a new one would need to be created, but where do we get type codes?
 		// for now, let some util class take care of it...
 		oSock = aSock;
-		oStatus = "WAITING FOR STATUS";
+		oStatus = Status.WAITING_FOR_STATUS;
 		oLogger = LoggerFactory.getLogger("ServerTestRunner-" + aSock.remoteAddress());
 		oResolver = Util.testJsonResolver();
 		oLocalEventBus = getLocalEventBus();
@@ -45,7 +48,7 @@ public class ServerTestRunner {
 		oBenchTags = rawTags == null || rawTags.strip().isEmpty()
 				? Collections.emptyList()
 				: Arrays.asList(rawTags.split(","));
-		oStatus = "IDLE";
+		oStatus = Status.IDLE;
 	}
 
 	private void onFinished(TestRunnerFinishedEvent trf) {
@@ -54,7 +57,7 @@ public class ServerTestRunner {
 			oLogger.warn("Received TestRunnerFinishedMessaged with out of date runId. Ignoring...");
 		} else {
 			oLogger.info("TestRunnerFinished with runId: {}", trf.runId);
-			oStatus = "IDLE";
+			oStatus = Status.IDLE;
 			oRunId = null;
 		}
 		oMainEventBus.push(trf);
@@ -70,28 +73,44 @@ public class ServerTestRunner {
 		oLocalEventBus.push(oResolver.resolve(aBuf));
 	}
 	
-	public void startTest(Run aRun){
+	public boolean startTestReturnSuccessful(Run aRun){
 		//build message here from run to send through socket.
 		//for now send hard coded
-		oStatus = "RUNNING";
+		oStatus = Status.RUNNING;
 		oRunId = aRun.getId();
 		var event = new StartRunEvent("/home/mms/foo/bar/build.zip", "zip zap zop", aRun.getId());
-		oSock.writeBinaryMessage(oResolver.resolve(event));
-		//if successful
+		try {
+			oSock.writeBinaryMessage(oResolver.resolve(event));
+		} catch (IllegalStateException socketException){
+			oLogger.error("Error when starting test for run {}", oRunId, socketException);
+			oStatus = Status.ERROR;
+			return false;
+		}
 		oMainEventBus.push(event);
+		return true;
 	}
 	
 	public void stopTest(){
-		// set internal status
-		// submit event to MEB for database processing (no?)
+		try {
+			oSock.writeBinaryMessage(oResolver.resolve(new StopTestEvent()));
+			oStatus = Status.IDLE;
+		} catch (IllegalStateException socketException){
+			oLogger.error("Error when trying to stop currently executing test", socketException);
+			oStatus = Status.ERROR;
+		}
+
 	}
 
-	public List<String> getTags() {
+	public List<String> getBenchTags() {
 		return new ArrayList<>(oBenchTags);
 	}
 
-	public String getStatus() {
+	public Status getStatus() {
 		return oStatus;
+	}
+
+	public SocketAddress getAddress(){
+		return oSock.remoteAddress();
 	}
 
 	@Override
@@ -101,5 +120,13 @@ public class ServerTestRunner {
 				", oStatus='" + oStatus + '\'' +
 				", oBenchTags=" + oBenchTags +
 				'}';
+	}
+
+	public void close() {
+		oSock.close();
+	}
+
+	public boolean isIdle() {
+		return oStatus.equals(Status.IDLE);
 	}
 }

@@ -1,14 +1,12 @@
 package com.gabb.sb.spring.controllers;
 
+import com.gabb.sb.spring.entities.TestPlan;
 import com.gabb.sb.spring.repos.TestPlanRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/testPlans")
@@ -31,5 +29,12 @@ public class TestPlanController {
     @ResponseBody
     private ResponseEntity<Object> getById(@PathVariable("id") Integer id){
         return new ResponseEntity<>(repo.findById(id), HttpStatus.OK);
+    }
+
+    @PostMapping
+    private ResponseEntity<String> post(@RequestBody TestPlanPostDTO body){
+        var tp = new TestPlan(body);
+        repo.save(tp);
+        return ResponseEntity.ok().build();
     }
 }

@@ -4,6 +4,7 @@ import com.gabb.sb.architecture.events.IEvent;
 import com.gabb.sb.architecture.events.bus.ConcurrentEventBus;
 import com.gabb.sb.architecture.events.bus.IEventBus;
 import com.gabb.sb.architecture.events.concretes.StartRunEvent;
+import com.gabb.sb.architecture.events.concretes.StopTestEvent;
 import com.gabb.sb.architecture.events.concretes.TestRunnerFinishedEvent;
 import com.gabb.sb.architecture.events.resolver.IEventResolver;
 import io.vertx.core.Vertx;
@@ -28,6 +29,7 @@ public class KeepAliveClient {
 	private String oUri;
 	private WebSocket oSocket;
 	private IEventResolver oResolver;
+	private Thread executionThread;
 
 	public KeepAliveClient(int port, String host) {
 		oResolver = Util.testJsonResolver();
@@ -46,11 +48,13 @@ public class KeepAliveClient {
 	}
 
 	private void startRun(StartRunEvent sre) {
-		new Thread(() -> {
+		executionThread = new Thread(() -> {
 			LOGGER.info("MOCK: Starting test for run  {}. mocking 5 second test", sre.runId);
-			try { Thread.sleep(5000); } catch (InterruptedException ignored) { }
+			String finish = System.getProperty("finish");
+			if(TestRunnerApplication.NO_FINISH) return;
+			try { Thread.sleep(5000 + new Random().nextInt(15000)); } catch (InterruptedException ignored) { return; }
 			LOGGER.info("MOCK: Sending TestRunnerFinishedEvent for runId {}", sre.runId);
-			String result = new Random().nextBoolean() ? "FAIL" : "PASS";
+			Status result = Status.PASS; //new Random().nextBoolean() ? Status.FAIL : Status.PASS;
 			TestRunnerFinishedEvent message =
 					new TestRunnerFinishedEvent(result, "server:/home/mms/ftp/yaddayadda", sre.runId);
 			try {
@@ -59,11 +63,21 @@ public class KeepAliveClient {
 				//can catch here and submit to queue of events to be sent once re-connected
 				th.printStackTrace();
 			}
-		}).start();
+		});
+		executionThread.start();
 	}
-	
+
+	private void stop(StopTestEvent ste) {
+		LOGGER.info("RECEIVED StopTestEvent; STOPPING TEST");
+		executionThread.interrupt();
+
+	}
+
 	private IEventBus getEventBus() {
-		return ConcurrentEventBus.builder().addListener(StartRunEvent.class, this::startRun).build();
+		return ConcurrentEventBus.builder()
+				.addListener(StartRunEvent.class, this::startRun)
+				.addListener(StopTestEvent.class, this::stop)
+				.build();
 	}
 
 	private void onHttpConnectionEstablished(HttpConnection aConn){

@@ -1,6 +1,7 @@
 package com.gabb.sb.architecture;
 
 import io.vertx.core.http.ServerWebSocket;
+import io.vertx.core.net.SocketAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,15 +9,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Function;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class ResourcePool {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ResourcePool.class);
+	private static Logger oLogger;
 	private final ExecutorService oNewResouceExecutor;
 	private List<ServerTestRunner> oTestRunners;
-	private final ReentrantLock oCollectionLock;
+	private final Object mutex;
 	private static ResourcePool oInstance;
 
 	public static ResourcePool getInstance() {
@@ -31,43 +33,49 @@ public class ResourcePool {
 	}
 
 	private ResourcePool() {
-		oCollectionLock = new ReentrantLock(true);
+		oLogger = LoggerFactory.getLogger(ResourcePool.class);
+		mutex = new Object();
 		oNewResouceExecutor = Executors.newSingleThreadExecutor();
 		oTestRunners = new ArrayList<>();
 	}
 
 
-	public void add(ServerWebSocket sock) {
-		var headers = sock.headers();
-		var tags = headers.get("bench.tags");
-		var client = new ServerTestRunner(sock, tags);
-		sock.closeHandler(__ -> {
-			oTestRunners.remove(client); //lock
-			//this makes me want to call is event bus...
-			LOGGER.info("MOCK: Insert into main message queue that the run assigned to {} is to be deleted", client);
-			LOGGER.info("Client {} closed and has been removed from the resource pool", client);
+	public void add(final ServerWebSocket sock) {
+		oNewResouceExecutor.submit(() -> {
+			var headers = sock.headers();
+			var tags = headers.get("bench.tags");
+			var client = new ServerTestRunner(sock, tags);
+			sock.closeHandler(__ -> {
+				synchronized (mutex) {
+					oTestRunners.remove(client); //lock
+				}
+				//this makes me want to call is event bus...
+				oLogger.info("MOCK: Insert into main message queue that the run assigned to {} is to be deleted", client);
+				oLogger.info("Client {} closed and has been removed from the resource pool", client);
+			});
+			sock.exceptionHandler(ex -> oLogger.error("Unhandled exception in socket {}", client, ex));
+			synchronized (mutex) {
+				oTestRunners.add(client);
+			}
+			oLogger.info("Client {} connected and is now available in the resource pool", client);
 		});
-		sock.exceptionHandler(ex -> LOGGER.error("Unhandled exception in socket {}", client, ex));
-		oTestRunners.add(client); //lock
-		LOGGER.info("Client {} connected and is now available in the resource pool", client);
 	}
 
-	/**
-	 * Allows thread-safe access of clients to perform opertaions like starting
-	 * tests, sending messages, and turning features on/off
-	 * //TODO: THIS IS NOT THE VISITOR PATTERN!
-	 * //TODO: THIS IS NOT THREAD SAFE!
-	 */
-	public void visit(Function<ServerTestRunner, Boolean> apply){
-		//lock!
-		for (ServerTestRunner serverTestRunner : oTestRunners) {
-			if(apply.apply(serverTestRunner)) return;
+	public void visitAll(Consumer<List<ServerTestRunner>> listConsumer, Predicate<ServerTestRunner> filter){
+		List<ServerTestRunner> serverTestRunners;
+		synchronized (mutex) {
+			serverTestRunners = oTestRunners.stream().filter(filter).collect(Collectors.toList());
 		}
+		listConsumer.accept(serverTestRunners);
 	}
-	
-	public boolean allocate(List<IResourceConsumer> consumers){
-		//...
-		return false;
+
+	public void terminate(String runnerSocketAddress) {
+		for(var runner : oTestRunners){
+			if(runner.getAddress().toString().equalsIgnoreCase(runnerSocketAddress)){
+				runner.stopTest();
+				return;
+			}
+		}
 	}
 
 	/**

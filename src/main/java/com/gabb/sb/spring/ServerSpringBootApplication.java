@@ -33,9 +33,9 @@ public class ServerSpringBootApplication {
 
         //TODO: DELETE THIS!!!!!!!!!#############################
         //this is only for testing
-        var repo = ctx.getBean(TestPlanRepo.class);
-        var tp = new TestPlan(2);
-        repo.save(tp);
+//        var repo = ctx.getBean(TestPlanRepo.class);
+//        var tp = new TestPlan(1);
+//        repo.save(tp);
         //#######################################################
 
         var dceb = ctx.getBean(DatabaseChangingEventBus.class);

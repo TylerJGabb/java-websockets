@@ -43,15 +43,15 @@ public abstract class PrioritySyncEventBus extends AbstractEventBus<SyncEventLis
 						listener.handleEvent(next);
 					}
 				}
+				afterProcessing();
 			} catch (InterruptedException intEx){
 				oLogger.error("Processing Loop Interrupted", intEx);
 				Thread.currentThread().interrupt();
 			}
-			catch (Throwable thrown){
+			catch (Throwable thrown) {
 				if (handleException(thrown)) return;
-			} finally {
-				afterProcessing();
 			}
+			System.out.println("DCEB HAS DIED");
 		});
 	}
 

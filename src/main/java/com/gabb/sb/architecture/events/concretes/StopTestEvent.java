@@ -1,8 +1,11 @@
 package com.gabb.sb.architecture.events.concretes;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.gabb.sb.architecture.events.IEvent;
 
-/**
- * What kinds of messages are needed here?...
- */
-public class StopTestEvent implements IEvent { }
+public class StopTestEvent implements IEvent {
+
+    @JsonProperty //won't serialize without at least one field
+    private boolean force = true;
+
+}
