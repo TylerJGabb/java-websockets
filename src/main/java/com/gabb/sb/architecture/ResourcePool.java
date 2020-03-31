@@ -1,5 +1,7 @@
 package com.gabb.sb.architecture;
 
+import com.gabb.sb.architecture.events.concretes.DeleteRunEvent;
+import io.vertx.core.Handler;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.net.SocketAddress;
 import org.slf4j.Logger;
@@ -39,20 +41,25 @@ public class ResourcePool {
 		oTestRunners = new ArrayList<>();
 	}
 
+	private void onClientClosed(ServerTestRunner runner) {
+		//if the runner closes connection and a run was running, it needs to be removed of DB
+		synchronized (mutex) {
+			oTestRunners.remove(runner); //lock
+		}
+		oLogger.info("Client {} closed and has been removed from the resource pool", runner);
+		Integer runId = runner.getRunId();
+		if (runId != null) {
+			oLogger.info("Client {} was running {} when closed. Queueing run deletion", runner, runId);
+			DatabaseChangingEventBus.getInstance().push(new DeleteRunEvent(runId));
+		}
+	}
 
 	public void add(final ServerWebSocket sock) {
 		oNewResouceExecutor.submit(() -> {
 			var headers = sock.headers();
 			var tags = headers.get("bench.tags");
 			var client = new ServerTestRunner(sock, tags);
-			sock.closeHandler(__ -> {
-				synchronized (mutex) {
-					oTestRunners.remove(client); //lock
-				}
-				//this makes me want to call is event bus...
-				oLogger.info("MOCK: Insert into main message queue that the run assigned to {} is to be deleted", client);
-				oLogger.info("Client {} closed and has been removed from the resource pool", client);
-			});
+			sock.closeHandler(__ -> onClientClosed(client));
 			sock.exceptionHandler(ex -> oLogger.error("Unhandled exception in socket {}", client, ex));
 			synchronized (mutex) {
 				oTestRunners.add(client);
@@ -91,7 +98,7 @@ public class ResourcePool {
 	 * Even If we block, and synchronize these events, it doesnt stop the problem of a socket possibly closing in the middle
 	 * of sending something through. Therefore, I think there needs to be some sort of error handling. 
 	 * 
-	 * SHould the client (meaning the visitor) be responsible for this handling? Can it all be handled internally?
+	 * SHould the testRunner (meaning the visitor) be responsible for this handling? Can it all be handled internally?
 	 * 
 	 */
 

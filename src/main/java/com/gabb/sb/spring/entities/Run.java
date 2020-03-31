@@ -64,4 +64,8 @@ public class Run {
     public String getRunnerAddressToString() {
         return runnerAddressToString;
     }
+
+    public void orphan() {
+        this.job = null;
+    }
 }

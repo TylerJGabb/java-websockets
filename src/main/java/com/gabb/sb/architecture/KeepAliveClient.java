@@ -52,9 +52,12 @@ public class KeepAliveClient {
 			LOGGER.info("MOCK: Starting test for run  {}. mocking 5 second test", sre.runId);
 			String finish = System.getProperty("finish");
 			if(TestRunnerApplication.NO_FINISH) return;
-			try { Thread.sleep(5000 + new Random().nextInt(15000)); } catch (InterruptedException ignored) { return; }
-			LOGGER.info("MOCK: Sending TestRunnerFinishedEvent for runId {}", sre.runId);
-			Status result = Status.PASS; //new Random().nextBoolean() ? Status.FAIL : Status.PASS;
+			try {
+				int millis = 5000 + new Random().nextInt(15000);
+				LOGGER.info("Mocking test for {}ms", millis);
+				Thread.sleep(millis); } catch (InterruptedException ignored) { return; }
+			LOGGER.info("Sending TestRunnerFinishedEvent for runId {}", sre.runId);
+			Status result = new Random().nextBoolean() ? Status.FAIL : Status.PASS;
 			TestRunnerFinishedEvent message =
 					new TestRunnerFinishedEvent(result, "server:/home/mms/ftp/yaddayadda", sre.runId);
 			try {

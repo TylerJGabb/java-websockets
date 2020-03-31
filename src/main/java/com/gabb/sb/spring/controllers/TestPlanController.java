@@ -32,9 +32,7 @@ public class TestPlanController {
     }
 
     @PostMapping
-    private ResponseEntity<String> post(@RequestBody TestPlanPostDTO body){
-        var tp = new TestPlan(body);
-        repo.save(tp);
-        return ResponseEntity.ok().build();
+    private ResponseEntity<Integer> post(@RequestBody TestPlanPostDTO body){
+        return ResponseEntity.ok(repo.save(new TestPlan(body)).getId());
     }
 }

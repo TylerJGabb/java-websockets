@@ -73,4 +73,8 @@ public class TestPlan {
     public Integer getRequiredPasses() {
         return requiredPasses;
     }
+
+    public Integer getId() {
+        return id;
+    }
 }

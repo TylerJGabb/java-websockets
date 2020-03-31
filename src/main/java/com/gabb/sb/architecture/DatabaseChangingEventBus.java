@@ -2,6 +2,7 @@ package com.gabb.sb.architecture;
 
 import com.gabb.sb.architecture.events.IEvent;
 import com.gabb.sb.architecture.events.bus.PrioritySyncEventBus;
+import com.gabb.sb.architecture.events.concretes.DeleteRunEvent;
 import com.gabb.sb.architecture.events.concretes.StartRunEvent;
 import com.gabb.sb.architecture.events.concretes.TestRunnerFinishedEvent;
 import com.gabb.sb.spring.entities.Job;
@@ -39,7 +40,16 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 		this.runRepo = runRepo;
 		addListener(TestRunnerFinishedEvent.class, this::testRunnerFinished);
 		addListener(StartRunEvent.class, this::testStarted);
+		addListener(DeleteRunEvent.class, this::deleteRun);
 		oInstance = this;
+	}
+
+	private void deleteRun(DeleteRunEvent dre) {
+		Run run = runRepo.findById(dre.getRunId()).orElse(null);
+		if(run == null) return;
+		run.orphan();
+		runRepo.save(run);
+		runRepo.delete(run);
 	}
 
 	@Override
@@ -106,7 +116,7 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 		}
 		Job job = run.getJob();
 		if(job.isTerminated()) {
-			oLogger.info("Run finished for terminated job, ignoring results");
+			oLogger.info("Run {} finished for terminated job {}, ignoring results", runId, job.getId());
 			return;
 		}
 		run.setStatus(result);

@@ -75,4 +75,8 @@ public class Job {
     public void setTerminated(boolean val) {
         isTerminated = val;
     }
+
+    public Integer getId() {
+        return id;
+    }
 }

@@ -1,6 +1,7 @@
 package com.gabb.sb.architecture;
 
 import ch.qos.logback.classic.Level;
+import com.gabb.sb.architecture.events.concretes.DeleteRunEvent;
 import com.gabb.sb.architecture.events.concretes.StartRunEvent;
 import com.gabb.sb.architecture.events.concretes.StopTestEvent;
 import com.gabb.sb.architecture.events.concretes.TestRunnerFinishedEvent;
@@ -36,8 +37,8 @@ public class Util {
 	 *     {@link TestRunnerFinishedEvent}
 	 *     {@link StartRunEvent}
 	 *     {@link StopTestEvent}
-	 *     {@link RegisterBenchTagsEvent}
-	 * </pre>	
+	 *     {@link DeleteRunEvent}
+	 * </pre>
 	 */
 	public static IEventResolver testJsonResolver() {
 		IEventResolver mResolver = AbstractEventResolver.resolver();
@@ -45,6 +46,7 @@ public class Util {
 		mResolver.registerTypeCode(TestRunnerFinishedEvent.class, 0x03);
 		mResolver.registerTypeCode(StartRunEvent.class, 0x04);
 		mResolver.registerTypeCode(StopTestEvent.class, 0x05);
+		mResolver.registerTypeCode(DeleteRunEvent.class, 0x06);
 		return mResolver;
 	}
 }

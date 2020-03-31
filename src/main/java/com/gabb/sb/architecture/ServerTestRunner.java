@@ -30,7 +30,7 @@ public class ServerTestRunner {
 	private final IEventBus oLocalEventBus;
 	private final IEventBus oMainEventBus;
 	private volatile Status oStatus;
-	private Integer oRunId;
+	private volatile Integer oRunId;
 	private List<String> oBenchTags;
 
 	public ServerTestRunner(ServerWebSocket aSock, String rawTags) {
@@ -128,5 +128,9 @@ public class ServerTestRunner {
 
 	public boolean isIdle() {
 		return oStatus.equals(Status.IDLE);
+	}
+
+	public Integer getRunId() {
+		return oRunId;
 	}
 }
