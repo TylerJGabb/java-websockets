@@ -77,4 +77,16 @@ public class TestPlan {
     public Integer getId() {
         return id;
     }
+
+    public boolean isTerminated() {
+        return isTerminated;
+    }
+
+    public void setTerminated(boolean val) {
+        isTerminated = val;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
 }

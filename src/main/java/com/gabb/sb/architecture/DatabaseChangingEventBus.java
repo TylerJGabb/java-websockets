@@ -6,14 +6,18 @@ import com.gabb.sb.architecture.events.concretes.DeleteRunEvent;
 import com.gabb.sb.architecture.events.concretes.StartRunEvent;
 import com.gabb.sb.architecture.events.concretes.TestRunnerFinishedEvent;
 import com.gabb.sb.spring.entities.Job;
+import com.gabb.sb.spring.entities.ManualTermination;
 import com.gabb.sb.spring.entities.Run;
+import com.gabb.sb.spring.entities.TestPlan;
 import com.gabb.sb.spring.repos.JobRepository;
+import com.gabb.sb.spring.repos.ManualTerminationRepo;
 import com.gabb.sb.spring.repos.RunRepo;
 import com.gabb.sb.spring.repos.TestPlanRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * This event bus can potentially mutate database when processing events
@@ -22,9 +26,10 @@ import java.util.List;
 @Component
 public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 
-	private RunRepo runRepo;
-	private TestPlanRepo testPlanRepo;
-	private JobRepository jobRepository;
+	private final ManualTerminationRepo termRepo;
+	private final RunRepo runRepo;
+	private final TestPlanRepo testPlanRepo;
+	private final JobRepository jobRepository;
 
 	private static DatabaseChangingEventBus oInstance;
 
@@ -32,14 +37,15 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 	public DatabaseChangingEventBus(
 			TestPlanRepo testPlanRepo,
 			JobRepository jobRepository,
-			RunRepo runRepo) {
+			RunRepo runRepo,
+			ManualTerminationRepo termRepo) {
 
 		super();
 		this.testPlanRepo = testPlanRepo;
 		this.jobRepository = jobRepository;
 		this.runRepo = runRepo;
+		this.termRepo = termRepo;
 		addListener(TestRunnerFinishedEvent.class, this::testRunnerFinished);
-		addListener(StartRunEvent.class, this::testStarted);
 		addListener(DeleteRunEvent.class, this::deleteRun);
 		oInstance = this;
 	}
@@ -60,7 +66,42 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 	
 	@Override
 	protected void beforeProcessing() {
-		oLogger.trace("DCEB ProcessManualTerminations");
+		processManualTerminations();
+	}
+
+	private void processManualTerminations() {
+		//the user submits a stop request to the api layer, something line /api/testPlans/stop?id=4
+		//maybe manualStop column?
+		//maybe new table, stop request, 1 to 1 mapping between stop request and test plan id
+		//stop request can have further attributes
+
+		Set<ManualTermination> terminations = termRepo.findByProcessedAtIsNull();
+		for(ManualTermination term : terminations){
+			//mark tp as terminated immediately
+			//find all runs in progress and terminate them
+			//find all jobs in progress and terminate them
+			Integer testPlanId = term.getTestPlanId();
+			term.processed();
+			termRepo.save(term);
+			TestPlan tp = testPlanRepo.findById(testPlanId).orElse(null);
+			if(tp == null) continue;
+			oLogger.info("Processing manual termination for tpId={}", tp.getId());
+			tp.setTerminated(true);
+			tp.setStatus(Status.TERMINATED);
+			testPlanRepo.save(tp);
+			Set<Run> inProgress = runRepo.findInProgressForTestPlan(testPlanId);
+			if(inProgress.isEmpty()) continue;
+			inProgress.forEach(r -> {
+				r.setStatus(Status.TERMINATED);
+				ResourcePool.getInstance().terminate(r.getRunnerAddressToString());
+				r.getJob().setStatus(Status.TERMINATED);
+				runRepo.save(r);
+				Job job = jobRepository.findById(r.getJob().getId()).orElseThrow();
+				job.setStatus(Status.TERMINATED);
+				jobRepository.save(job);
+			});
+		}
+
 	}
 
 	@Override
@@ -133,14 +174,12 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 				resourcePool.terminate(r.getRunnerAddressToString());
 				runRepo.save(r);
 			});
+			oLogger.info("Job {} finished with status {}", job.getId(), job.getStatus());
+		} else {
+			oLogger.info("Run {} finished with result {}", runId, result);
 		}
-		oLogger.info("RunFinished: {} with result {}", runId, result);
 	}
 	
-	private void testStarted(StartRunEvent aStartRunEvent){
-		oLogger.info("DCEB MOCK handle of StartRunEvent for run {}", aStartRunEvent.runId);
-	}
-
 	public static DatabaseChangingEventBus getInstance() {
 		if(oInstance == null) throw new IllegalStateException("Instance not set yet");
 		return oInstance;

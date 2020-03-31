@@ -49,9 +49,11 @@ public class KeepAliveClient {
 
 	private void startRun(StartRunEvent sre) {
 		executionThread = new Thread(() -> {
-			LOGGER.info("MOCK: Starting test for run  {}. mocking 5 second test", sre.runId);
 			String finish = System.getProperty("finish");
-			if(TestRunnerApplication.NO_FINISH) return;
+			if(TestRunnerApplication.NO_FINISH) {
+				LOGGER.info("!! IF YOU EVER SEE THIS IN PRODUCTION ITS REALLY BAD !! NO_FINISH was true, aborting test, not reporting back");
+				return;
+			}
 			try {
 				int millis = 5000 + new Random().nextInt(15000);
 				LOGGER.info("Mocking test for {}ms", millis);

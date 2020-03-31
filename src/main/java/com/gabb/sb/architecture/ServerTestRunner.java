@@ -81,18 +81,20 @@ public class ServerTestRunner {
 		var event = new StartRunEvent("/home/mms/foo/bar/build.zip", "zip zap zop", aRun.getId());
 		try {
 			oSock.writeBinaryMessage(oResolver.resolve(event));
+			oLogger.info("Started run {} on {}", oRunId, oSock.remoteAddress());
 		} catch (IllegalStateException socketException){
 			oLogger.error("Error when starting test for run {}", oRunId, socketException);
 			oStatus = Status.ERROR;
 			return false;
 		}
-		oMainEventBus.push(event);
 		return true;
 	}
 	
 	public void stopTest(){
 		try {
 			oSock.writeBinaryMessage(oResolver.resolve(new StopTestEvent()));
+			oLogger.info("Run {} on {} has been terminated", oRunId, oSock.remoteAddress());
+			oRunId = null;
 			oStatus = Status.IDLE;
 		} catch (IllegalStateException socketException){
 			oLogger.error("Error when trying to stop currently executing test", socketException);

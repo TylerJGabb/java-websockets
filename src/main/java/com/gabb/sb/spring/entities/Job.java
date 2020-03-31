@@ -79,4 +79,8 @@ public class Job {
     public Integer getId() {
         return id;
     }
+
+    public Status getStatus() {
+        return status;
+    }
 }
