@@ -9,4 +9,5 @@ public class Loggers {
     public static final Logger DATABASE_LOGGER = LoggerFactory.getLogger("DATABASE_LOGGER");
     public static final Logger RESOURCE_POOL_LOGGER = LoggerFactory.getLogger("RESOURCE_POOL_LOGGER");
     public static final Logger EVENT_BUS_LOGGER = LoggerFactory.getLogger("EVENT_BUS_LOGGER");
+    public static final Logger TEST_RUNNER_APPLICATION_LOGGER = LoggerFactory.getLogger("TEST_RUNNER_APPLICATION_LOGGER");
 }

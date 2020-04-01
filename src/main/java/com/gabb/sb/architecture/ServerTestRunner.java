@@ -19,6 +19,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static com.gabb.sb.PropertyKeys.BENCH_TAGS_KEY;
+import static com.gabb.sb.PropertyKeys.HUMAN_READABLE_NAME_KEY;
+
 
 /**
  * Represents a remote resource on server-side
@@ -34,22 +37,31 @@ public class ServerTestRunner extends Guarded {
 	private volatile Integer oRunId;
 	private List<String> oBenchTags;
 
-	public ServerTestRunner(ServerWebSocket aSock, String rawTags) {
+	public ServerTestRunner(ServerWebSocket aSock) {
 		// this class needs to be able to resolve messages.... Where is it going to get that resolver?
 		// it can't be shared, because it would cause multi-threading issues
 		// a new one would need to be created, but where do we get type codes?
 		// for now, let some util class take care of it...
 		oSock = aSock;
-		oLogger = LoggerFactory.getLogger("ServerTestRunner-" + aSock.remoteAddress());
 		oResolver = Util.testJsonResolver();
 		oMainEventBus = DatabaseChangingEventBus.getInstance();
-		oSock.handler(this::handle);
+		oSock.handler(this::handleIncomingBuffer);
 		oLocalEventBus = ConcurrentEventBus.builder()
 				.addListener(TestRunnerFinishedEvent.class, this::onFinished)
 				.build();
+
+		String rawTags = aSock.headers().get(BENCH_TAGS_KEY);
 		oBenchTags = rawTags == null || rawTags.strip().isEmpty()
 				? Collections.emptyList()
 				: Arrays.asList(rawTags.split(","));
+
+		//each ServerTestRunner should have its own logger, makes it easier to identify behavior in logs
+		String humanReadableName = aSock.headers().get(HUMAN_READABLE_NAME_KEY);
+		String remoteAddressToString = aSock.remoteAddress().toString();
+		oLogger = LoggerFactory.getLogger( humanReadableName == null || humanReadableName.isBlank()
+				? remoteAddressToString
+				: humanReadableName + ": " + remoteAddressToString);
+
 		oStatus = Status.IDLE;
 	}
 
@@ -65,7 +77,7 @@ public class ServerTestRunner extends Guarded {
 		oMainEventBus.push(trf);
 	}
 	
-	private void handle(Buffer aBuf) {
+	private void handleIncomingBuffer(Buffer aBuf) {
 		oLocalEventBus.push(oResolver.resolve(aBuf));
 	}
 	
@@ -93,7 +105,7 @@ public class ServerTestRunner extends Guarded {
 			oRunId = null;
 			oStatus = Status.IDLE;
 		} catch (IllegalStateException socketException){
-			oLogger.error("Error when trying to stop currently executing test", socketException);
+			oLogger.error("Error when trying to stop current  test", socketException);
 			oStatus = Status.ERROR;
 		}
 
@@ -114,7 +126,7 @@ public class ServerTestRunner extends Guarded {
 	@Override
 	public String toString() {
 		return "ServerTestRunner{" +
-				"oSock=" + oSock +
+				"oSock.remoteAddress()=" + oSock.remoteAddress() +
 				", oStatus='" + oStatus + '\'' +
 				", oBenchTags=" + oBenchTags +
 				'}';

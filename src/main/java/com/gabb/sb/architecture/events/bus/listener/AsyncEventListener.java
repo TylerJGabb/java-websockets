@@ -19,6 +19,7 @@ public abstract class AsyncEventListener<E extends IEvent> extends AbstractEvent
 					handleEvent(oQueue.take());
 				} catch (InterruptedException aE) {
 					aE.printStackTrace();
+					interrupt();
 				}
 			}
 		}.start();

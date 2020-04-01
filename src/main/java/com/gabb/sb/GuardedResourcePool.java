@@ -12,7 +12,6 @@ import static com.gabb.sb.Loggers.RESOURCE_POOL_LOGGER;
 
 public class GuardedResourcePool extends GuardedThreadSafeCollection<ServerTestRunner> {
 
-    public static final String BENCH_TAGS_KEY = "bench.tags";
     public static final String TESTRUNNER_CONNECT_FMT = "TestRunner {} has connected and is now available in the resource pool";
     public static final String UNHANDLEX_EX_FMT = "Unhandled socket exception occurred for TestRunner {}";
     public static final String CONNECT_CLOSED_FMT = "TestRunner {} connection has closed. Removing from ResourcePool";
@@ -51,9 +50,7 @@ public class GuardedResourcePool extends GuardedThreadSafeCollection<ServerTestR
 
     public void add(final ServerWebSocket aSocket){
         oExecutor.submit(() -> {
-            var headers = aSocket.headers();
-            var benchTags = headers.get(BENCH_TAGS_KEY);
-            var serverTestRunner = new ServerTestRunner(aSocket, benchTags);
+            var serverTestRunner = new ServerTestRunner(aSocket);
             aSocket.closeHandler(__ -> onConnectionClosed(serverTestRunner));
             aSocket.exceptionHandler(ex -> onSocketException(ex, serverTestRunner));
             protectedAdd(serverTestRunner);
