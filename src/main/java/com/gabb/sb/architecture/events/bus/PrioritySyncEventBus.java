@@ -9,6 +9,8 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
 
+import static com.gabb.sb.Loggers.EVENT_BUS_LOGGER;
+
 //periodically drain queue to temp queue, process everything in queue, then perform special logic
 public abstract class PrioritySyncEventBus extends AbstractEventBus<SyncEventListener> {
 
@@ -24,7 +26,7 @@ public abstract class PrioritySyncEventBus extends AbstractEventBus<SyncEventLis
 	}
 	
 	public void start(){
-		oLogger.info("DCEB STARTING");
+		EVENT_BUS_LOGGER.info("Event Bus '{}' started processing", this.getClass().getSimpleName());
 		oProcessLoopThread.start();
 	}
 	

@@ -2,8 +2,8 @@ package com.gabb.sb.architecture;
 
 
 import ch.qos.logback.classic.Level;
+import com.gabb.sb.GuardedResourcePool;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,12 +27,12 @@ public class Server {
 
 	public static void main(String[] args) {
 		Util.configureLoggersProgrammatically(Level.INFO);
-		Vertx vertx = Vertx.vertx();
-		HttpServer server = vertx.createHttpServer();
-		ResourcePool cPool = ResourcePool.getInstance();
+		var vertx = Vertx.vertx();
+		var server = vertx.createHttpServer();
+		var pool = GuardedResourcePool.getInstance();
 		DatabaseChangingEventBus.getInstance().start();
-		server.websocketHandler(cPool::add).listen(PORT, HOST);
-		LOGGER.info("Listening on {}:{}", HOST, server.actualPort());
+		server.websocketHandler(pool::add).listen(PORT, HOST);
+		LOGGER.info("Vertex Listening on {}:{}", HOST, server.actualPort());
 	}
 }
 

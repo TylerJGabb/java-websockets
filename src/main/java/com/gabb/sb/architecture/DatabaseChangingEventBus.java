@@ -1,9 +1,9 @@
 package com.gabb.sb.architecture;
 
+import com.gabb.sb.GuardedResourcePool;
 import com.gabb.sb.architecture.events.IEvent;
 import com.gabb.sb.architecture.events.bus.PrioritySyncEventBus;
 import com.gabb.sb.architecture.events.concretes.DeleteRunEvent;
-import com.gabb.sb.architecture.events.concretes.StartRunEvent;
 import com.gabb.sb.architecture.events.concretes.TestRunnerFinishedEvent;
 import com.gabb.sb.spring.entities.Job;
 import com.gabb.sb.spring.entities.ManualTermination;
@@ -93,7 +93,7 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 			if(inProgress.isEmpty()) continue;
 			inProgress.forEach(r -> {
 				r.setStatus(Status.TERMINATED);
-				ResourcePool.getInstance().terminate(r.getRunnerAddressToString());
+				GuardedResourcePool.getInstance().sendTerminationSignal(r.getRunnerAddressToString());
 				r.getJob().setStatus(Status.TERMINATED);
 				runRepo.save(r);
 				Job job = jobRepository.findById(r.getJob().getId()).orElseThrow();
@@ -110,23 +110,22 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 		allocate();
 	}
 
-	private void allocate() {
-		ResourcePool.getInstance().visitAll(runners -> {
-			if(runners.size() == 0) return;
-			List<Integer> testPlanIds = testPlanRepo.findActiveUnderRunnerCap();
-			for(Integer planId: testPlanIds){
-				for(ServerTestRunner runner : runners){
-					List<Integer> jobIds;
-					List<String> benchTags = runner.getBenchTags();
-					jobIds = benchTags.isEmpty()
-							? jobRepository.getForTestPlanWithoutBenchTags(planId)
-							: jobRepository.getForTestPlanWithOrWithoutBenchTags(planId, benchTags);
-					if(jobIds.isEmpty()) continue;
+	private void allocate(){
+		List<Integer> testPlanIds = testPlanRepo.findActiveUnderRunnerCap();
+		for(Integer planId: testPlanIds){
+			GuardedResourcePool.getInstance().applyForEachAfterFiltering(ServerTestRunner::isIdle, runner -> {
+				List<Integer> jobIds;
+				List<String> benchTags = runner.getBenchTags();
+				jobIds = benchTags.isEmpty()
+						? jobRepository.getForTestPlanWithoutBenchTags(planId)
+						: jobRepository.getForTestPlanWithOrWithoutBenchTags(planId, benchTags);
+				if(!jobIds.isEmpty()) {
 					Job job = jobRepository.findById(jobIds.get(0)).orElseThrow();
-					if(startRunReturnSuccessful(runner, job)) return;
+					return startRunReturnSuccessful(runner, job);
 				}
-			}
-		}, ServerTestRunner::isIdle);
+				return false;
+			});
+		}
 	}
 
 	private boolean startRunReturnSuccessful(ServerTestRunner runner, Job job) {
@@ -167,11 +166,10 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 			job.setStatus(failing ? Status.FAIL : Status.PASS);
 			job.setTerminated(true);
 			jobRepository.save(job);
-			ResourcePool resourcePool = ResourcePool.getInstance();
 			var runsInProgress = runRepo.findInProgressForJob(job);
 			runsInProgress.forEach(r -> {
 				r.setStatus(Status.TERMINATED);
-				resourcePool.terminate(r.getRunnerAddressToString());
+				GuardedResourcePool.getInstance().sendTerminationSignal(r.getRunnerAddressToString());
 				runRepo.save(r);
 			});
 			oLogger.info("Job {} finished with status {}", job.getId(), job.getStatus());
@@ -181,7 +179,7 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 	}
 	
 	public static DatabaseChangingEventBus getInstance() {
-		if(oInstance == null) throw new IllegalStateException("Instance not set yet");
-		return oInstance;
+		if (oInstance != null) return oInstance;
+		throw new IllegalStateException("Instance not set yet");
 	}
 }

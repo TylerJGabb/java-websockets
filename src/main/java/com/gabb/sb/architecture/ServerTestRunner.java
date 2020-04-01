@@ -1,5 +1,6 @@
 package com.gabb.sb.architecture;
 
+import com.gabb.sb.Guarded;
 import com.gabb.sb.architecture.events.bus.ConcurrentEventBus;
 import com.gabb.sb.architecture.events.bus.IEventBus;
 import com.gabb.sb.architecture.events.concretes.StartRunEvent;
@@ -22,7 +23,7 @@ import java.util.List;
 /**
  * Represents a remote resource on server-side
  */
-public class ServerTestRunner {
+public class ServerTestRunner extends Guarded {
 
 	private final Logger oLogger;
 	private final ServerWebSocket oSock;
@@ -39,12 +40,13 @@ public class ServerTestRunner {
 		// a new one would need to be created, but where do we get type codes?
 		// for now, let some util class take care of it...
 		oSock = aSock;
-		oStatus = Status.WAITING_FOR_STATUS;
 		oLogger = LoggerFactory.getLogger("ServerTestRunner-" + aSock.remoteAddress());
 		oResolver = Util.testJsonResolver();
-		oLocalEventBus = getLocalEventBus();
 		oMainEventBus = DatabaseChangingEventBus.getInstance();
 		oSock.handler(this::handle);
+		oLocalEventBus = ConcurrentEventBus.builder()
+				.addListener(TestRunnerFinishedEvent.class, this::onFinished)
+				.build();
 		oBenchTags = rawTags == null || rawTags.strip().isEmpty()
 				? Collections.emptyList()
 				: Arrays.asList(rawTags.split(","));
@@ -63,12 +65,6 @@ public class ServerTestRunner {
 		oMainEventBus.push(trf);
 	}
 	
-	private IEventBus getLocalEventBus() {
-		return ConcurrentEventBus.builder()
-				.addListener(TestRunnerFinishedEvent.class, this::onFinished)
-				.build();
-	}
-
 	private void handle(Buffer aBuf) {
 		oLocalEventBus.push(oResolver.resolve(aBuf));
 	}
@@ -124,6 +120,7 @@ public class ServerTestRunner {
 				'}';
 	}
 
+	//used in debugging to force connection resets when trying to test robustness
 	public void close() {
 		oSock.close();
 	}

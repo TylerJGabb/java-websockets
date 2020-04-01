@@ -7,5 +7,6 @@ public class Loggers {
 
     public static final Logger CONTROLLER_LOGGER = LoggerFactory.getLogger("CONTROLLER_LOGGER");
     public static final Logger DATABASE_LOGGER = LoggerFactory.getLogger("DATABASE_LOGGER");
-
+    public static final Logger RESOURCE_POOL_LOGGER = LoggerFactory.getLogger("RESOURCE_POOL_LOGGER");
+    public static final Logger EVENT_BUS_LOGGER = LoggerFactory.getLogger("EVENT_BUS_LOGGER");
 }
