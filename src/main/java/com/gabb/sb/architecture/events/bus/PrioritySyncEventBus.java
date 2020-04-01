@@ -11,7 +11,12 @@ import java.util.concurrent.PriorityBlockingQueue;
 
 import static com.gabb.sb.Loggers.EVENT_BUS_LOGGER;
 
-//periodically drain queue to temp queue, process everything in queue, then perform special logic
+/**
+ * Periodically drain queue to temp queue, then process everything in temp queue. This occurs at
+ * a period of {@link PrioritySyncEventBus#getProcessingPeriodMillis()}. {@link PrioritySyncEventBus#beforeProcessing()}
+ * and {@link PrioritySyncEventBus#afterProcessing()} are invoked before and after processing of said temp queue, respectively.
+ * Events are processed according to their {@link IEvent#getPriority()}
+ */
 public abstract class PrioritySyncEventBus extends AbstractEventBus<SyncEventListener> {
 
 	public static final int INIT_CAPACITY = 10;
@@ -22,19 +27,19 @@ public abstract class PrioritySyncEventBus extends AbstractEventBus<SyncEventLis
 	public PrioritySyncEventBus(){
 		oSerialEventQueue = new PriorityBlockingQueue<>(INIT_CAPACITY, Comparator.comparingInt(IEvent::getPriority));
 		oEventDrain = new LinkedList<>();
-		oProcessLoopThread = makeProcessLoopThread();
 	}
 	
 	public void start(){
-		EVENT_BUS_LOGGER.info("Event Bus '{}' started processing", this.getClass().getSimpleName());
+		oProcessLoopThread = makeProcessLoopThread();
 		oProcessLoopThread.start();
+		EVENT_BUS_LOGGER.info("Event Bus '{}' started processing", this.getClass().getSimpleName());
 	}
 	
 	@SuppressWarnings("unchecked")
 	private Thread makeProcessLoopThread() {
 		return new Thread(() -> {
 			while(!Thread.currentThread().isInterrupted()) try {
-				Thread.sleep(500);
+				Thread.sleep(getProcessingPeriodMillis());
 				beforeProcessing();
 				oSerialEventQueue.drainTo(oEventDrain);
 				IEvent next;
@@ -47,13 +52,15 @@ public abstract class PrioritySyncEventBus extends AbstractEventBus<SyncEventLis
 				}
 				afterProcessing();
 			} catch (InterruptedException intEx){
-				oLogger.error("Processing Loop Interrupted", intEx);
+				EVENT_BUS_LOGGER.error("Processing Loop Thread of PrioritySyncEventBus implementation '{}' Interrupted",
+						this.getClass().getSimpleName(), intEx);
 				Thread.currentThread().interrupt();
 			}
 			catch (Throwable thrown) {
-				if (handleException(thrown)) return;
+				if (handleExceptionReturnWhetherToStopProcessing(thrown)) break;
 			}
-			System.out.println("DCEB HAS DIED");
+			EVENT_BUS_LOGGER.error("Processing Loop Thread of PrioritySyncEventBus implementation '{}' has died", this.getClass().getSimpleName());
+			if(restartUponDeath()) start();
 		});
 	}
 
@@ -72,7 +79,9 @@ public abstract class PrioritySyncEventBus extends AbstractEventBus<SyncEventLis
 		});
 	}
 
-	protected abstract boolean handleException(Throwable aThrown);
+	protected abstract boolean restartUponDeath();
+	protected abstract int getProcessingPeriodMillis();
+	protected abstract boolean handleExceptionReturnWhetherToStopProcessing(Throwable aThrown);
 	protected abstract void beforeProcessing();
 	protected abstract void afterProcessing();
 }

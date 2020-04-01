@@ -23,7 +23,6 @@ import static com.gabb.sb.Loggers.DATABASE_LOGGER;
 
 /**
  * This event bus can potentially mutate database when processing events
- * Events are processed according to their {@link IEvent#getPriority()}
  */
 @Component
 public class DatabaseChangingEventBus extends PrioritySyncEventBus {
@@ -58,7 +57,17 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 	}
 
 	@Override
-	protected final boolean handleException(Throwable aThrown) {
+	protected boolean restartUponDeath() {
+		return true;
+	}
+
+	@Override
+	protected int getProcessingPeriodMillis() {
+		return 500;
+	}
+
+	@Override
+	protected final boolean handleExceptionReturnWhetherToStopProcessing(Throwable aThrown) {
 		oLogger.error("ERROR IN DCEB", aThrown);
 		return false;
 	}
