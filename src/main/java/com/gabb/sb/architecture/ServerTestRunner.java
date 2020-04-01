@@ -41,10 +41,7 @@ public class ServerTestRunner extends Guarded {
 	@JsonProperty("benchTags") private List<String> oBenchTags;
 
 	public ServerTestRunner(ServerWebSocket aSock) {
-		// this class needs to be able to resolve messages.... Where is it going to get that resolver?
-		// it can't be shared, because it would cause multi-threading issues
-		// a new one would need to be created, but where do we get type codes?
-		// for now, let some util class take care of it...
+		super();
 		oSock = aSock;
 		oResolver = Util.testJsonResolver();
 		oMainEventBus = DatabaseChangingEventBus.getInstance();

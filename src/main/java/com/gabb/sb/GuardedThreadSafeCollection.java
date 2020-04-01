@@ -1,6 +1,7 @@
 package com.gabb.sb;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -11,38 +12,49 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * A collection of objects that is thread safe, facilitating access to and modification of said objects
- * in a way that prevents those objects from being simultaneously mutated or accessed concurrently
+ * in a way that prevents those objects from being simultaneously mutated or accessed concurrently. In the end
+ * it is up to the user to access these objects through this collection only, and not mutate them outside
+ * of provided methods like {@link GuardedThreadSafeCollection#applyForEachAfterFiltering(Predicate, Function)} or
+ * {@link GuardedThreadSafeCollection#findFirstAndConsume(Predicate, Consumer)}
  */
 public abstract class GuardedThreadSafeCollection<G extends Guarded> {
 
-    private final ReentrantLock oReentrantLock;
+    private final ReentrantLock oGuardedObjectsLock;
     private final List<G> oGuardedObjects;
 
     protected GuardedThreadSafeCollection() {
         oGuardedObjects = new ArrayList<>();
-        oReentrantLock = new ReentrantLock(true);
+        oGuardedObjectsLock = new ReentrantLock(true);
     }
 
     protected void protectedAdd(G aGuarded) {
         try {
-            oReentrantLock.lock();
+            oGuardedObjectsLock.lock();
             oGuardedObjects.add(aGuarded);
         } finally {
-            oReentrantLock.unlock();
+            oGuardedObjectsLock.unlock();
         }
     }
 
     protected void protectedRemove(G aGuarded) {
         try {
-            oReentrantLock.lock();
+            oGuardedObjectsLock.lock();
             oGuardedObjects.remove(aGuarded);
         } finally {
-            oReentrantLock.unlock();
+            oGuardedObjectsLock.unlock();
         }
     }
 
-    public List<G> getListCopy(){
-        return new ArrayList<>(oGuardedObjects);
+    /**
+     * Guards the provided {@link G} while testing it against the provided {@link Predicate}
+     */
+    private boolean guardedPredicateTester(G guarded, Predicate<G> aPredicate){
+        try {
+            guarded.guard();
+            return aPredicate.test(guarded);
+        } finally {
+            guarded.relinquish();
+        }
     }
 
     /**
@@ -61,10 +73,10 @@ public abstract class GuardedThreadSafeCollection<G extends Guarded> {
         // FIRST: filter the collection according to the passed filter
         List<G> filtered;
         try {
-            oReentrantLock.lock();
-            filtered = oGuardedObjects.stream().filter(aFilter).collect(toList());
+            oGuardedObjectsLock.lock();
+            filtered = oGuardedObjects.stream().filter(g -> guardedPredicateTester(g, aFilter)).collect(toList());
         } finally {
-            oReentrantLock.unlock();
+            oGuardedObjectsLock.unlock();
         }
         // SECOND: for each item in the filtered list, apply the provided function, stopping immediately
         // if said function returns true
@@ -79,16 +91,53 @@ public abstract class GuardedThreadSafeCollection<G extends Guarded> {
         }
     }
 
+    /**
+     * Filters items in the collection according to aFilter, then accepts the provided aConsumer
+     * for each item returned from the filer.
+     *
+     * @param aFilter the predicate used to filter the collection
+     * @param aConsumer the consumer to invoke on each item returned from the filter
+     */
+    public void consumeForEachAfterFiltering(Predicate<G> aFilter, Consumer<G> aConsumer){
+        applyForEachAfterFiltering(aFilter, g -> {
+            aConsumer.accept(g);
+            return false;
+        });
+    }
+
+    public void consumeForEach(Consumer<G> aConsumer){
+        List<G> listCopy;
+        try {
+            oGuardedObjectsLock.lock();
+            listCopy = new ArrayList<>(oGuardedObjects);
+        } finally {
+            oGuardedObjectsLock.unlock();
+        }
+        for(var guarded: listCopy){
+            try{
+                guarded.guard();
+                aConsumer.accept(guarded);
+            } finally {
+                guarded.relinquish();
+            }
+        }
+    }
+
+    /**
+     * Finds the first {@link Guarded} that satisfies the provided predicate, and invokes the provided consumer
+     * on it.
+     */
     public void findFirstAndConsume(Predicate<G> aFilter, Consumer<G> aConsumer) {
 
         // first get a filtered list according to the filter
         G found;
         try {
-            oReentrantLock.lock();
-            if (null == (found = oGuardedObjects.stream().filter(aFilter).findFirst().orElse(null))) return;
+            oGuardedObjectsLock.lock();
+            found = oGuardedObjects.stream().filter(g -> guardedPredicateTester(g, aFilter)).findFirst().orElse(null);
         } finally {
-            oReentrantLock.unlock();
+            oGuardedObjectsLock.unlock();
         }
+        if (found == null) return;
 
         // next accept consumer with found item, enforcing locks
         try {

@@ -9,31 +9,29 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Predicate;
-
-import static com.gabb.sb.Loggers.CONTROLLER_LOGGER;
 
 @Controller
 @RequestMapping("/testRunners")
 public class TestRunnerController {
 
     /**
-     * If nameContains is specified as request parameter then attempts to find a testRunner with a name
-     * containing aNameContains, otherwise, returns all testRunners.
-     * @param aNameContains
-     * @return
+     * If nameContains is specified as request parameter then attempts to find all testRunners with names
+     * containing said string, otherwise returns all testRunners.
      */
     @ResponseBody
     @GetMapping
-    private ResponseEntity<Object> getByNameOrGetAll(@RequestParam(name = "nameContains", required = false) String aNameContains){
-        CONTROLLER_LOGGER.info("nameContains={}", aNameContains);
-        if(aNameContains == null) return ResponseEntity.ok(GuardedResourcePool.getInstance().getListCopy());
-        Predicate<ServerTestRunner> predicate = tr -> tr.getName().toLowerCase().contains(aNameContains.toLowerCase());
-        var found = new AtomicReference<ServerTestRunner>();
-        GuardedResourcePool.getInstance().findFirstAndConsume(predicate, found::set);
-        if(found.get() == null) return ResponseEntity.notFound().build();
-        return ResponseEntity.ok(found);
+    private ResponseEntity<Object> findByNameContains(@RequestParam(name = "nameContains", required = false) String aNameContains){
+        List<Object> resources = new ArrayList<>();
+        if (aNameContains == null) {
+            GuardedResourcePool.getInstance().consumeForEach(resources::add);
+        } else {
+            Predicate<ServerTestRunner> testNameContains = tr -> tr.getName().toLowerCase().contains(aNameContains.toLowerCase());
+            GuardedResourcePool.getInstance().consumeForEachAfterFiltering(testNameContains, resources::add);
+        }
+        return ResponseEntity.ok(resources);
     }
 
 
