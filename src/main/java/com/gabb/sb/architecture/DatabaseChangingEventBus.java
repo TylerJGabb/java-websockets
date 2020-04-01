@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Set;
 
+import static com.gabb.sb.Loggers.DATABASE_LOGGER;
+
 /**
  * This event bus can potentially mutate database when processing events
  * Events are processed according to their {@link IEvent#getPriority()}
@@ -32,6 +34,11 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 	private final JobRepository jobRepository;
 
 	private static DatabaseChangingEventBus oInstance;
+
+	public static DatabaseChangingEventBus getInstance() {
+		if (oInstance != null) return oInstance;
+		throw new IllegalStateException("Instance not set yet");
+	}
 
 	@Autowired
 	public DatabaseChangingEventBus(
@@ -50,23 +57,31 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 		oInstance = this;
 	}
 
-	private void deleteRun(DeleteRunEvent dre) {
-		Run run = runRepo.findById(dre.getRunId()).orElse(null);
-		if(run == null) return;
-		run.orphan();
-		runRepo.save(run);
-		runRepo.delete(run);
-	}
-
 	@Override
-	protected boolean handleException(Throwable aThrown) {
+	protected final boolean handleException(Throwable aThrown) {
 		oLogger.error("ERROR IN DCEB", aThrown);
 		return false;
 	}
-	
+
 	@Override
-	protected void beforeProcessing() {
+	protected final void beforeProcessing() {
 		processManualTerminations();
+	}
+
+	@Override
+	protected final void afterProcessing() {
+		testPlanStatusUpdate();
+		allocate();
+	}
+
+	private void testPlanStatusUpdate() {
+		List<Integer> nonTerminatedIds = testPlanRepo.findByIsTerminatedFalse();
+		testPlanRepo.updateFinalStatus();
+		for(TestPlan tp : testPlanRepo.findAllById(nonTerminatedIds)){
+			if(tp.isTerminated()){
+				DATABASE_LOGGER.info("Marked final status of TestPlan {} to {}", tp.getId(), tp.getStatus());
+			}
+		}
 	}
 
 	private void processManualTerminations() {
@@ -104,10 +119,12 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 
 	}
 
-	@Override
-	protected void afterProcessing() {
-		oLogger.trace("DCEB TestPlanStatusUpdate");
-		allocate();
+	private void deleteRun(DeleteRunEvent dre) {
+		Run run = runRepo.findById(dre.getRunId()).orElse(null);
+		if(run == null) return;
+		run.orphan();
+		runRepo.save(run);
+		runRepo.delete(run);
 	}
 
 	private void allocate(){
@@ -121,7 +138,10 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 						: jobRepository.getForTestPlanWithOrWithoutBenchTags(planId, benchTags);
 				if(!jobIds.isEmpty()) {
 					Job job = jobRepository.findById(jobIds.get(0)).orElseThrow();
-					return startRunReturnSuccessful(runner, job);
+					if(startRunReturnSuccessful(runner, job)){
+						testPlanRepo.setStatusInProgressIfNotStartedYet(planId);
+						return true;
+					}
 				}
 				return false;
 			});
@@ -176,10 +196,5 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 		} else {
 			oLogger.info("Run {} finished with result {}", runId, result);
 		}
-	}
-	
-	public static DatabaseChangingEventBus getInstance() {
-		if (oInstance != null) return oInstance;
-		throw new IllegalStateException("Instance not set yet");
 	}
 }

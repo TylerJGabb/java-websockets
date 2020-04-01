@@ -23,10 +23,14 @@ public class TestPlan {
 
     @JsonProperty
     @Enumerated(EnumType.STRING)
-    private Status status = Status.NOT_SET_YET;
+    private Status status = Status.NOT_STARTED_YET;
 
     @Column(columnDefinition = "DATETIME(4)")
     private LocalDateTime lastProcessed;
+
+    public Status getStatus() {
+        return status;
+    }
 
     @JsonProperty
     private Integer priority;
@@ -48,6 +52,7 @@ public class TestPlan {
 
         int runCount = maxAllowedFailures + requiredPasses;
         jobs = new ArrayList<>();
+        jobs.add(new Job(runCount, this));
         jobs.add(new Job(runCount, this));
     }
 

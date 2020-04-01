@@ -8,5 +8,5 @@ public enum Status {
     NOT_SET_YET,
     IN_PROGRESS,
     IDLE,
-    ERROR;
+    ERROR, NOT_STARTED_YET;
 }
