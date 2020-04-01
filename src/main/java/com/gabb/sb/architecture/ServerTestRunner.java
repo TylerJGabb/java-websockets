@@ -1,5 +1,7 @@
 package com.gabb.sb.architecture;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.gabb.sb.Guarded;
 import com.gabb.sb.architecture.events.bus.ConcurrentEventBus;
 import com.gabb.sb.architecture.events.bus.IEventBus;
@@ -28,14 +30,15 @@ import static com.gabb.sb.PropertyKeys.HUMAN_READABLE_NAME_KEY;
  */
 public class ServerTestRunner extends Guarded {
 
-	private final Logger oLogger;
-	private final ServerWebSocket oSock;
-	private final IEventResolver oResolver;
-	private final IEventBus oLocalEventBus;
-	private final IEventBus oMainEventBus;
-	private volatile Status oStatus;
-	private volatile Integer oRunId;
-	private List<String> oBenchTags;
+	@JsonIgnore private final Logger oLogger;
+	@JsonIgnore private final ServerWebSocket oSock;
+	@JsonIgnore private final IEventResolver oResolver;
+	@JsonIgnore private final IEventBus oLocalEventBus;
+	@JsonIgnore private final IEventBus oMainEventBus;
+	@JsonProperty("name") private final String oName;
+	@JsonProperty("status") private volatile Status oStatus;
+	@JsonProperty("runId") private volatile Integer oRunId;
+	@JsonProperty("benchTags") private List<String> oBenchTags;
 
 	public ServerTestRunner(ServerWebSocket aSock) {
 		// this class needs to be able to resolve messages.... Where is it going to get that resolver?
@@ -58,10 +61,11 @@ public class ServerTestRunner extends Guarded {
 		//each ServerTestRunner should have its own logger, makes it easier to identify behavior in logs
 		String humanReadableName = aSock.headers().get(HUMAN_READABLE_NAME_KEY);
 		String remoteAddressToString = aSock.remoteAddress().toString();
-		oLogger = LoggerFactory.getLogger( humanReadableName == null || humanReadableName.isBlank()
+		oName = humanReadableName == null || humanReadableName.isBlank()
 				? remoteAddressToString
-				: humanReadableName + ": " + remoteAddressToString);
+				: humanReadableName + ": " + remoteAddressToString;
 
+		oLogger = LoggerFactory.getLogger(oName);
 		oStatus = Status.IDLE;
 	}
 
@@ -111,14 +115,17 @@ public class ServerTestRunner extends Guarded {
 
 	}
 
+	@JsonIgnore
 	public List<String> getBenchTags() {
 		return new ArrayList<>(oBenchTags);
 	}
 
+	@JsonIgnore
 	public Status getStatus() {
 		return oStatus;
 	}
 
+	@JsonIgnore
 	public SocketAddress getAddress(){
 		return oSock.remoteAddress();
 	}
@@ -132,16 +139,23 @@ public class ServerTestRunner extends Guarded {
 				'}';
 	}
 
-	//used in debugging to force connection resets when trying to test robustness
-	public void close() {
-		oSock.close();
-	}
-
+	@JsonIgnore
 	public boolean isIdle() {
 		return oStatus.equals(Status.IDLE);
 	}
 
+	@JsonIgnore
 	public Integer getRunId() {
 		return oRunId;
+	}
+
+	@JsonIgnore
+	public String getName() {
+		return oName;
+	}
+
+	//used in debugging to force connection resets when trying to test robustness
+	public void close() {
+		oSock.close();
 	}
 }

@@ -41,6 +41,10 @@ public abstract class GuardedThreadSafeCollection<G extends Guarded> {
         }
     }
 
+    public List<G> getListCopy(){
+        return new ArrayList<>(oGuardedObjects);
+    }
+
     /**
      * Filters items in the collection according to aFilter, then applies the function aMutateThenReturnWhetherToStopIterating
      * to each item returned from the filer. If this method returns true, then iteration stops, otherwise iteration
@@ -86,7 +90,7 @@ public abstract class GuardedThreadSafeCollection<G extends Guarded> {
             oReentrantLock.unlock();
         }
 
-        // next accept consumer with found item, enforcing
+        // next accept consumer with found item, enforcing locks
         try {
             found.guard();
             aConsumer.accept(found);
