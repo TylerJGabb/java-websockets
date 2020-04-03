@@ -22,47 +22,49 @@ public abstract class PrioritySyncEventBus extends AbstractEventBus<SyncEventLis
 	public static final int INIT_CAPACITY = 10;
 	private PriorityBlockingQueue<IEvent> oSerialEventQueue;
 	private Queue<IEvent> oEventDrain;
-	private Thread oProcessLoopThread;
-	
+
 	public PrioritySyncEventBus(){
 		oSerialEventQueue = new PriorityBlockingQueue<>(INIT_CAPACITY, Comparator.comparingInt(IEvent::getPriority));
 		oEventDrain = new LinkedList<>();
 	}
-	
+
 	public void start(){
-		oProcessLoopThread = makeProcessLoopThread();
-		oProcessLoopThread.start();
+		new Thread(){
+			@Override
+			public void run() {
+				while(!isInterrupted()) try {
+					sleep(getProcessingPeriodMillis());
+					beforeProcessing();
+					processQueue();
+					afterProcessing();
+				} catch (InterruptedException intEx){
+					EVENT_BUS_LOGGER.error("Processing Loop Thread of PrioritySyncEventBus implementation '{}' Interrupted",
+							this.getClass().getSimpleName(), intEx);
+					interrupt();
+				}
+				catch (Throwable thrown) {
+					if (handleExceptionReturnWhetherToStopProcessing(thrown)) break;
+				}
+				EVENT_BUS_LOGGER.error("Processing Loop Thread of PrioritySyncEventBus implementation '{}' has died", this.getClass().getSimpleName());
+				if(restartUponDeath()) PrioritySyncEventBus.this.start();
+			}
+		}.start();
 		EVENT_BUS_LOGGER.info("Event Bus '{}' started processing", this.getClass().getSimpleName());
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	private Thread makeProcessLoopThread() {
-		return new Thread(() -> {
-			while(!Thread.currentThread().isInterrupted()) try {
-				Thread.sleep(getProcessingPeriodMillis());
-				beforeProcessing();
-				oSerialEventQueue.drainTo(oEventDrain);
-				IEvent next;
-				while(null != (next = oEventDrain.poll())){
-					var listeners = oListenerMap.get(next.getClass());
-					if (listeners == null) continue;
-					for(var listener: listeners){
-						listener.handleEvent(next);
-					}
-				}
-				afterProcessing();
-			} catch (InterruptedException intEx){
-				EVENT_BUS_LOGGER.error("Processing Loop Thread of PrioritySyncEventBus implementation '{}' Interrupted",
-						this.getClass().getSimpleName(), intEx);
-				Thread.currentThread().interrupt();
+	private void processQueue() {
+		oSerialEventQueue.drainTo(oEventDrain);
+		IEvent next;
+		while(null != (next = oEventDrain.poll())){
+			var listeners = oListenerMap.get(next.getClass());
+			if (listeners == null) continue;
+			for(var listener: listeners){
+				listener.handleEvent(next);
 			}
-			catch (Throwable thrown) {
-				if (handleExceptionReturnWhetherToStopProcessing(thrown)) break;
-			}
-			EVENT_BUS_LOGGER.error("Processing Loop Thread of PrioritySyncEventBus implementation '{}' has died", this.getClass().getSimpleName());
-			if(restartUponDeath()) start();
-		});
+		}
 	}
+
 
 	@Override
 	public void push(IEvent aEvent) {

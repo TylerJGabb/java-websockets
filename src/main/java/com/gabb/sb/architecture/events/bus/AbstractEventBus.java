@@ -20,6 +20,7 @@ public abstract class AbstractEventBus<L extends AbstractEventListener> implemen
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void addListener(L aIEventListener) {
 		var eventType = aIEventListener.getEventType();
 		oListenerMap.computeIfAbsent(eventType, __ -> new ArrayList<>());

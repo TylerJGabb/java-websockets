@@ -2,7 +2,7 @@ package com.gabb.sb.spring;
 
 
 import ch.qos.logback.classic.Level;
-import com.gabb.sb.GuardedResourcePool;
+import com.gabb.sb.ResourcePool;
 import com.gabb.sb.architecture.DatabaseChangingEventBus;
 import com.gabb.sb.architecture.Util;
 import io.vertx.core.Vertx;
@@ -12,13 +12,13 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-import static com.gabb.sb.architecture.Server.HOST;
-import static com.gabb.sb.architecture.Server.PORT;
-
 @SpringBootApplication
 @EnableJpaRepositories
 @ComponentScan("com.gabb.sb")
 public class ServerSpringBootApplication {
+
+    public static final String HOST = "localhost";
+    public static final int PORT = 8081;
 
     public static void main(String[] args) {
         Util.configureLoggersProgrammatically(Level.INFO);
@@ -27,7 +27,7 @@ public class ServerSpringBootApplication {
                 .build(args)
                 .run();
         ctx.getBean(DatabaseChangingEventBus.class).start();
-        var pool = GuardedResourcePool.getInstance();
+        var pool = ResourcePool.getInstance();
         var vertx = Vertx.vertx();
         var server = vertx.createHttpServer();
         server.websocketHandler(pool::add).listen(PORT, HOST);

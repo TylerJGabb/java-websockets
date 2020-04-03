@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.gabb.sb.architecture.ServerTestRunner;
 import com.gabb.sb.architecture.Status;
-import io.vertx.core.net.SocketAddress;
 
 import javax.persistence.*;
 

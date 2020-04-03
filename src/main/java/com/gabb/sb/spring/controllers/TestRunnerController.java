@@ -1,7 +1,6 @@
 package com.gabb.sb.spring.controllers;
 
-import com.gabb.sb.GuardedResourcePool;
-import com.gabb.sb.architecture.ServerTestRunner;
+import com.gabb.sb.ResourcePool;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,7 +10,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
 
 @Controller
 @RequestMapping("/testRunners")
@@ -26,10 +24,12 @@ public class TestRunnerController {
     private ResponseEntity<Object> findByNameContains(@RequestParam(name = "nameContains", required = false) String aNameContains){
         List<Object> resources = new ArrayList<>();
         if (aNameContains == null) {
-            GuardedResourcePool.getInstance().consumeForEach(resources::add);
+            ResourcePool.getInstance().accept(resources::add);
         } else {
-            Predicate<ServerTestRunner> testNameContains = tr -> tr.getName().toLowerCase().contains(aNameContains.toLowerCase());
-            GuardedResourcePool.getInstance().consumeForEachAfterFiltering(testNameContains, resources::add);
+            ResourcePool.getInstance().accept(tr -> {
+                if(tr.getName().toLowerCase().contains(aNameContains.toLowerCase())) resources.add(tr);
+                return false;
+            });
         }
         return ResponseEntity.ok(resources);
     }
