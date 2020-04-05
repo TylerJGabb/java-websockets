@@ -104,16 +104,8 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 	}
 
 	private void processManualTerminations() {
-		//the user submits a stop request to the api layer, something line /api/testPlans/stop?id=4
-		//maybe manualStop column?
-		//maybe new table, stop request, 1 to 1 mapping between stop request and test plan id
-		//stop request can have further attributes
-
 		Set<ManualTermination> terminations = termRepo.findByProcessedAtIsNull();
 		for(ManualTermination term : terminations){
-			//mark tp as terminated immediately
-			//find all runs in progress and terminate them
-			//find all jobs in progress and terminate them
 			Integer testPlanId = term.getTestPlanId();
 			term.processed();
 			termRepo.save(term);
