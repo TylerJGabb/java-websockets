@@ -1,7 +1,8 @@
 package com.gabb.sb.architecture;
 
-import com.gabb.sb.GuardedResourcePool;
-import com.gabb.sb.architecture.events.IEvent;
+import com.gabb.sb.FreeResourceVisitor;
+import com.gabb.sb.ResourceAllocationVisitor;
+import com.gabb.sb.ResourcePool;
 import com.gabb.sb.architecture.events.bus.PrioritySyncEventBus;
 import com.gabb.sb.architecture.events.concretes.DeleteRunEvent;
 import com.gabb.sb.architecture.events.concretes.TestRunnerFinishedEvent;
@@ -51,8 +52,8 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 		this.jobRepository = jobRepository;
 		this.runRepo = runRepo;
 		this.termRepo = termRepo;
-		addListener(TestRunnerFinishedEvent.class, this::testRunnerFinished);
-		addListener(DeleteRunEvent.class, this::deleteRun);
+		addListener(TestRunnerFinishedEvent.class, runnerFinishedEvent -> testRunnerFinished(runnerFinishedEvent));
+		addListener(DeleteRunEvent.class, dre -> deleteRun(dre));
 		oInstance = this;
 	}
 
@@ -83,6 +84,15 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 		allocate();
 	}
 
+	private void allocate() {
+		List<Integer> testPlanIds = testPlanRepo.findActiveUnderRunnerCap();
+		for(Integer planId: testPlanIds) {
+			boolean allocated = ResourcePool.getInstance().accept(
+					new ResourceAllocationVisitor(planId, jobRepository, runRepo, testPlanRepo));
+			if(allocated) return;
+		}
+	}
+
 	private void testPlanStatusUpdate() {
 		List<Integer> nonTerminatedIds = testPlanRepo.findByIsTerminatedFalse();
 		testPlanRepo.updateFinalStatus();
@@ -94,16 +104,8 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 	}
 
 	private void processManualTerminations() {
-		//the user submits a stop request to the api layer, something line /api/testPlans/stop?id=4
-		//maybe manualStop column?
-		//maybe new table, stop request, 1 to 1 mapping between stop request and test plan id
-		//stop request can have further attributes
-
 		Set<ManualTermination> terminations = termRepo.findByProcessedAtIsNull();
 		for(ManualTermination term : terminations){
-			//mark tp as terminated immediately
-			//find all runs in progress and terminate them
-			//find all jobs in progress and terminate them
 			Integer testPlanId = term.getTestPlanId();
 			term.processed();
 			termRepo.save(term);
@@ -117,7 +119,7 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 			if(inProgress.isEmpty()) continue;
 			inProgress.forEach(r -> {
 				r.setStatus(Status.TERMINATED);
-				GuardedResourcePool.getInstance().sendTerminationSignal(r.getRunnerAddressToString());
+				ResourcePool.getInstance().accept(new FreeResourceVisitor(r.getRunnerAddressToString()));
 				r.getJob().setStatus(Status.TERMINATED);
 				runRepo.save(r);
 				Job job = jobRepository.findById(r.getJob().getId()).orElseThrow();
@@ -134,45 +136,6 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 		run.orphan();
 		runRepo.save(run);
 		runRepo.delete(run);
-	}
-
-	private void allocate(){
-		List<Integer> testPlanIds = testPlanRepo.findActiveUnderRunnerCap();
-		for(Integer planId: testPlanIds){
-			GuardedResourcePool.getInstance().applyForEachAfterFiltering(ServerTestRunner::isIdle, runner -> {
-				List<Integer> jobIds;
-				List<String> benchTags = runner.getBenchTags();
-				jobIds = benchTags.isEmpty()
-						? jobRepository.getForTestPlanWithoutBenchTags(planId)
-						: jobRepository.getForTestPlanWithOrWithoutBenchTags(planId, benchTags);
-				if(!jobIds.isEmpty()) {
-					Job job = jobRepository.findById(jobIds.get(0)).orElseThrow();
-					if(startRunReturnSuccessful(runner, job)){
-						testPlanRepo.setStatusInProgressIfNotStartedYet(planId);
-						return true;
-					}
-				}
-				return false;
-			});
-		}
-	}
-
-	private boolean startRunReturnSuccessful(ServerTestRunner runner, Job job) {
-		//add run to job
-		Run run = new Run();
-		run.setRunner(runner);
-		runRepo.save(run); //need to do this to get runId;
-		//this call sets runner status, runId. Errors are handled internally. boolean is returned indicating success
-		if(runner.startTestReturnSuccessful(run)) {
-			run.setStatus(Status.IN_PROGRESS);
-			job.addRun(run);
-			job.setStarted(); //set job last started at (which sets tp last processed)
-			jobRepository.save(job); //save job, updates testplan too
-			return true;
-		} else {
-			runRepo.delete(run);
-			return false;
-		}
 	}
 
 	private void testRunnerFinished(TestRunnerFinishedEvent aRunnerFinishedEvent){
@@ -198,7 +161,7 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 			var runsInProgress = runRepo.findInProgressForJob(job);
 			runsInProgress.forEach(r -> {
 				r.setStatus(Status.TERMINATED);
-				GuardedResourcePool.getInstance().sendTerminationSignal(r.getRunnerAddressToString());
+				ResourcePool.getInstance().accept(new FreeResourceVisitor(r.getRunnerAddressToString()));
 				runRepo.save(r);
 			});
 			oLogger.info("Job {} finished with status {}", job.getId(), job.getStatus());

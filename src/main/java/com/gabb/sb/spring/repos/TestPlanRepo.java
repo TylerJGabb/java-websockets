@@ -16,7 +16,6 @@ public interface TestPlanRepo extends CrudRepository<TestPlan, Integer> {
      * Count the number of runs in each test plan
      * that are IN_PROGRESS. If that count is less than tp.maxTestRunners
      * then that testplan's id is added to the list returned..
-     * @return
      */
     @Query(
             "SELECT tp.id FROM TestPlan tp " +
@@ -43,7 +42,7 @@ public interface TestPlanRepo extends CrudRepository<TestPlan, Integer> {
                 "WHEN (SELECT COUNT(j) FROM Job j WHERE j.testPlan.id = tp.id AND j.status = 'FAIL') > 0 THEN 'FAIL' " +
                 "ELSE 'PASS' END, " +
             "tp.isTerminated = 1 " + //set the terminated flag to true
-        //where no jobs remain for this tp that have not been terminated
+        //where all jobs are terminated
         "WHERE (SELECT COUNT(j) FROM Job j WHERE j.testPlan.id = tp.id AND j.isTerminated = 0) = 0 " +
         //and this guy hasn't been terminated yet
         "AND tp.isTerminated = 0")

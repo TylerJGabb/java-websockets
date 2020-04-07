@@ -18,7 +18,7 @@ import java.util.Optional;
 import static com.gabb.sb.Loggers.CONTROLLER_LOGGER;
 
 @Controller
-@RequestMapping("/testPlans")
+@RequestMapping("api/testPlans")
 public class TestPlanController {
 
     private final ManualTerminationRepo termRepo;
@@ -38,7 +38,7 @@ public class TestPlanController {
         return new ResponseEntity<>(planRepo.findAll(), HttpStatus.OK);
     }
 
-    @GetMapping("/testPlans/{id}")
+    @GetMapping("/{id}")
     @ResponseBody
     private ResponseEntity<Object> getById(@PathVariable("id") Integer id){
         return new ResponseEntity<>(planRepo.findById(id), HttpStatus.OK);

@@ -2,7 +2,8 @@ package com.gabb.sb.architecture;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.gabb.sb.Guarded;
+import com.gabb.sb.IResourceAcceptsVisitor;
+import com.gabb.sb.IResourceVisitor;
 import com.gabb.sb.architecture.events.bus.ConcurrentEventBus;
 import com.gabb.sb.architecture.events.bus.IEventBus;
 import com.gabb.sb.architecture.events.concretes.StartRunEvent;
@@ -28,13 +29,12 @@ import static com.gabb.sb.PropertyKeys.HUMAN_READABLE_NAME_KEY;
 /**
  * Represents a remote resource on server-side
  */
-public class ServerTestRunner extends Guarded {
+public class ServerTestRunner implements IResourceAcceptsVisitor {
 
 	@JsonIgnore private final Logger oLogger;
 	@JsonIgnore private final ServerWebSocket oSock;
 	@JsonIgnore private final IEventResolver oResolver;
 	@JsonIgnore private final IEventBus oLocalEventBus;
-	@JsonIgnore private final IEventBus oMainEventBus;
 	@JsonProperty("name") private final String oName;
 	@JsonProperty("status") private volatile Status oStatus;
 	@JsonProperty("runId") private volatile Integer oRunId;
@@ -44,10 +44,9 @@ public class ServerTestRunner extends Guarded {
 		super();
 		oSock = aSock;
 		oResolver = Util.testJsonResolver();
-		oMainEventBus = DatabaseChangingEventBus.getInstance();
 		oSock.handler(this::handleIncomingBuffer);
 		oLocalEventBus = ConcurrentEventBus.builder()
-				.addListener(TestRunnerFinishedEvent.class, this::onFinished)
+				.addListener(TestRunnerFinishedEvent.class, trf -> onFinished(trf))
 				.build();
 
 		String rawTags = aSock.headers().get(BENCH_TAGS_KEY);
@@ -75,7 +74,7 @@ public class ServerTestRunner extends Guarded {
 			oStatus = Status.IDLE;
 			oRunId = null;
 		}
-		oMainEventBus.push(trf);
+		DatabaseChangingEventBus.getInstance().push(trf);
 	}
 	
 	private void handleIncomingBuffer(Buffer aBuf) {
@@ -127,15 +126,6 @@ public class ServerTestRunner extends Guarded {
 		return oSock.remoteAddress();
 	}
 
-	@Override
-	public String toString() {
-		return "ServerTestRunner{" +
-				"oSock.remoteAddress()=" + oSock.remoteAddress() +
-				", oStatus='" + oStatus + '\'' +
-				", oBenchTags=" + oBenchTags +
-				'}';
-	}
-
 	@JsonIgnore
 	public boolean isIdle() {
 		return oStatus.equals(Status.IDLE);
@@ -154,5 +144,19 @@ public class ServerTestRunner extends Guarded {
 	//used in debugging to force connection resets when trying to test robustness
 	public void close() {
 		oSock.close();
+	}
+	@Override
+
+	public String toString() {
+		return "ServerTestRunner{" +
+				"oSock.remoteAddress()=" + oSock.remoteAddress() +
+				", oStatus='" + oStatus + '\'' +
+				", oBenchTags=" + oBenchTags +
+				'}';
+	}
+
+	@Override
+	public synchronized boolean accept(IResourceVisitor visitor) {
+		return visitor.visit(this);
 	}
 }

@@ -8,6 +8,7 @@ import com.gabb.sb.architecture.events.concretes.StartRunEvent;
 import com.gabb.sb.architecture.events.concretes.StopTestEvent;
 import com.gabb.sb.architecture.events.concretes.TestRunnerFinishedEvent;
 import com.gabb.sb.architecture.events.resolver.IEventResolver;
+import com.gabb.sb.spring.ServerSpringBootApplication;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.CaseInsensitiveHeaders;
 import io.vertx.core.http.HttpClient;
@@ -20,6 +21,8 @@ import java.util.Random;
 import static com.gabb.sb.Loggers.TEST_RUNNER_APPLICATION_LOGGER;
 import static com.gabb.sb.PropertyKeys.BENCH_TAGS_KEY;
 import static com.gabb.sb.PropertyKeys.HUMAN_READABLE_NAME_KEY;
+import static com.gabb.sb.spring.ServerSpringBootApplication.HOST;
+import static com.gabb.sb.spring.ServerSpringBootApplication.PORT;
 
 public class TestRunnerApplication {
 
@@ -40,7 +43,7 @@ public class TestRunnerApplication {
 	public static void main(String[] args) throws IOException {
 		loadProperties();
 		Util.configureLoggersProgrammatically(Level.INFO);
-		new TestRunnerApplication(Server.PORT, Server.HOST).connect();
+		new TestRunnerApplication(PORT, HOST).connect();
 	}
 
 	private static void loadProperties() throws IOException {

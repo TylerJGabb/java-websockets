@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 
 @Controller
-@RequestMapping("/jobs")
+@RequestMapping("api/jobs")
 public class JobController {
 
     JobRepository repo;
@@ -28,7 +28,7 @@ public class JobController {
         return new ResponseEntity<>(repo.findAll(), HttpStatus.OK);
     }
 
-    @GetMapping("/jobs/{id}")
+    @GetMapping("/{id}")
     @ResponseBody
     private ResponseEntity<Object> getById(@PathVariable("id") Integer id){
         return new ResponseEntity<>(repo.findById(id), HttpStatus.OK);
