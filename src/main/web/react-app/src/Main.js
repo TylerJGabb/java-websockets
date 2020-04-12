@@ -1,12 +1,13 @@
 import React from 'react';
-import RunnerDashboard from './RunnerDashboard'
+import MinimalRunnerDashboard from './MinimalRunnerDashboard'
 
 function Main(){
     return (
         <div className="Main">
             <header className="Main-header">
                 TEST RUNNER MANAGER
-                <RunnerDashboard />
+                <MinimalRunnerDashboard />
+                {/* <TestPlanDashboard /> */}
             </header>
 
         </div>
