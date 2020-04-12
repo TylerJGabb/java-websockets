@@ -3,10 +3,7 @@ package com.gabb.sb.spring.controllers;
 import com.gabb.sb.ResourcePool;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,10 +18,14 @@ public class TestRunnerController {
      */
     @ResponseBody
     @GetMapping
+    @CrossOrigin
     private ResponseEntity<Object> findByNameContains(@RequestParam(name = "nameContains", required = false) String aNameContains){
         List<Object> resources = new ArrayList<>();
         if (aNameContains == null) {
-            ResourcePool.getInstance().accept(resources::add);
+            ResourcePool.getInstance().accept(r -> {
+                resources.add(r);
+                return false;
+            });
         } else {
             ResourcePool.getInstance().accept(tr -> {
                 if(tr.getName().toLowerCase().contains(aNameContains.toLowerCase())) resources.add(tr);
