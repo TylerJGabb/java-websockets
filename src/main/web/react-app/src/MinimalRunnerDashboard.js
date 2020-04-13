@@ -38,12 +38,11 @@ class MinimalRunnerDashboard extends React.Component{
     }
 
     render(){
-        const buttonTitle = 'loads page showing more detailed runner statistics, this has yet to be implemented';
         return (
             <div className="RunnerDashboard" style={{borderStyle: 'dashed'}}>
                 {this.state.failedToConnect ? "CAN NOT FETCH RUNNERS, CONNECTION FAILED" : "RUNNERS:"}
-                {this.state.runners.map(tr => <MinimalRunner key={tr.name} tr={tr}/>)}
-                <button className="moreDetails" title={buttonTitle}>More Details</button>
+                {this.state.runners.map(tr => <MinimalRunner key={tr.host} tr={tr}/>)}
+                TODO: Click Runner to go to maintenance portal
             </div>
         );
     }

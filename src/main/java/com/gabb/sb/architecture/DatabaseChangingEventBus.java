@@ -119,7 +119,7 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 			if(inProgress.isEmpty()) continue;
 			inProgress.forEach(r -> {
 				r.setStatus(Status.TERMINATED);
-				ResourcePool.getInstance().accept(new FreeResourceVisitor(r.getRunnerAddressToString()));
+				ResourcePool.getInstance().accept(new FreeResourceVisitor(r.getRunnerHost()));
 				r.getJob().setStatus(Status.TERMINATED);
 				runRepo.save(r);
 				Job job = jobRepository.findById(r.getJob().getId()).orElseThrow();
@@ -161,7 +161,7 @@ public class DatabaseChangingEventBus extends PrioritySyncEventBus {
 			var runsInProgress = runRepo.findInProgressForJob(job);
 			runsInProgress.forEach(r -> {
 				r.setStatus(Status.TERMINATED);
-				ResourcePool.getInstance().accept(new FreeResourceVisitor(r.getRunnerAddressToString()));
+				ResourcePool.getInstance().accept(new FreeResourceVisitor(r.getRunnerHost()));
 				runRepo.save(r);
 			});
 			oLogger.info("Job {} finished with status {}", job.getId(), job.getStatus());

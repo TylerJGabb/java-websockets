@@ -28,7 +28,7 @@ public class TestRunnerController {
             });
         } else {
             ResourcePool.getInstance().accept(tr -> {
-                if(tr.getName().toLowerCase().contains(aNameContains.toLowerCase())) resources.add(tr);
+                if(tr.getHost().toLowerCase().contains(aNameContains.toLowerCase())) resources.add(tr);
                 return false;
             });
         }

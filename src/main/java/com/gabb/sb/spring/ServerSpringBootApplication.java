@@ -26,11 +26,10 @@ public class ServerSpringBootApplication {
                 .properties("spring.config.name:server")
                 .build(args)
                 .run();
+
         ctx.getBean(DatabaseChangingEventBus.class).start();
-        var pool = ResourcePool.getInstance();
-        var vertx = Vertx.vertx();
-        var server = vertx.createHttpServer();
-        server.websocketHandler(pool::add).listen(PORT, HOST);
+        var server = Vertx.vertx().createHttpServer();
+        server.websocketHandler(ResourcePool.getInstance()).listen(PORT, HOST);
         LoggerFactory.getLogger(ServerSpringBootApplication.class).info("Vertx Listening on {}:{}", HOST, server.actualPort());
     }
 

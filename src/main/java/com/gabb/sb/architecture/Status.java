@@ -8,5 +8,7 @@ public enum Status {
     NOT_SET_YET,
     IN_PROGRESS,
     IDLE,
-    ERROR, NOT_STARTED_YET;
+    ERROR,
+    NOT_STARTED_YET,
+    WEBSOCKET_DISCONNECTED;
 }

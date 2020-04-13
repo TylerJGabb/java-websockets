@@ -1,6 +1,5 @@
 package com.gabb.sb;
 
-import com.gabb.sb.IResourceVisitor;
 import com.gabb.sb.architecture.ServerTestRunner;
 import com.gabb.sb.architecture.Status;
 import com.gabb.sb.spring.entities.Job;
@@ -48,7 +47,7 @@ public class ResourceAllocationVisitor implements IResourceVisitor {
     private boolean startRunReturnSuccessful(ServerTestRunner runner, Job job) {
         //add run to job
         Run run = new Run();
-        run.setRunner(runner);
+        run.setRunnerHost(runner.getHost());
         oRunRepo.save(run); //need to do this to get runId;
         //this call sets runner status, runId. Errors are handled internally. boolean is returned indicating success
         if(runner.startTestReturnSuccessful(run)) {

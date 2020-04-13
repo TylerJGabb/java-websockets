@@ -2,8 +2,6 @@ package com.gabb.sb.spring.entities;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.gabb.sb.architecture.ServerTestRunner;
 import com.gabb.sb.architecture.Status;
 
 import javax.persistence.*;
@@ -28,7 +26,7 @@ public class Run {
     @Enumerated(EnumType.STRING)
     private Status status = Status.NOT_SET_YET;
 
-    private String runnerAddressToString;
+    private String runnerHost;
 
     public Run() { }
 
@@ -46,12 +44,12 @@ public class Run {
     public void setStatus(Status status) {
         this.status = status;
     }
-    public void setRunner(ServerTestRunner testRunner) {
-        this.runnerAddressToString = testRunner.getAddress().toString();
+    public void setRunnerHost(String aHost) {
+        this.runnerHost = aHost;
     }
 
-    public String getRunnerAddressToString() {
-        return runnerAddressToString;
+    public String getRunnerHost() {
+        return runnerHost;
     }
     public Integer getId() {
         return id;

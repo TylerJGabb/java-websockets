@@ -1,11 +1,13 @@
 package com.gabb.sb.architecture;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.gabb.sb.IResourceAcceptsVisitor;
 import com.gabb.sb.IResourceVisitor;
 import com.gabb.sb.architecture.events.bus.ConcurrentEventBus;
 import com.gabb.sb.architecture.events.bus.IEventBus;
+import com.gabb.sb.architecture.events.concretes.DeleteRunEvent;
 import com.gabb.sb.architecture.events.concretes.StartRunEvent;
 import com.gabb.sb.architecture.events.concretes.StopTestEvent;
 import com.gabb.sb.architecture.events.concretes.TestRunnerFinishedEvent;
@@ -18,51 +20,57 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import static com.gabb.sb.PropertyKeys.BENCH_TAGS_KEY;
-import static com.gabb.sb.PropertyKeys.HUMAN_READABLE_NAME_KEY;
 
 
 /**
  * Represents a remote resource on server-side
  */
+@JsonAutoDetect(
+		isGetterVisibility = JsonAutoDetect.Visibility.NONE, // 'is' like 'isTerminated'
+		getterVisibility = JsonAutoDetect.Visibility.NONE,  //  regular getters
+		fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class ServerTestRunner implements IResourceAcceptsVisitor {
 
+	public static final String ACTIVE_RUN_QUEUE_DELETION_FMT = "Websocket closed when running {}. Run deletion queued";
+
 	@JsonIgnore private final Logger oLogger;
-	@JsonIgnore private final ServerWebSocket oSock;
+	@JsonIgnore private ServerWebSocket oSock;
 	@JsonIgnore private final IEventResolver oResolver;
 	@JsonIgnore private final IEventBus oLocalEventBus;
-	@JsonProperty("name") private final String oName;
+	@JsonProperty("host") private String oHost;
 	@JsonProperty("status") private volatile Status oStatus;
 	@JsonProperty("runId") private volatile Integer oRunId;
 	@JsonProperty("benchTags") private List<String> oBenchTags;
 
-	public ServerTestRunner(ServerWebSocket aSock) {
-		super();
+	public void setSocket(ServerWebSocket aSock){
 		oSock = aSock;
-		oResolver = Util.testJsonResolver();
 		oSock.handler(this::handleIncomingBuffer);
-		oLocalEventBus = ConcurrentEventBus.builder()
-				.addListener(TestRunnerFinishedEvent.class, trf -> onFinished(trf))
-				.build();
-
-		String rawTags = aSock.headers().get(BENCH_TAGS_KEY);
-		oBenchTags = rawTags == null || rawTags.strip().isEmpty()
-				? Collections.emptyList()
-				: Arrays.asList(rawTags.split(","));
-
-		//each ServerTestRunner should have its own logger, makes it easier to identify behavior in logs
-		String humanReadableName = aSock.headers().get(HUMAN_READABLE_NAME_KEY);
-		String remoteAddressToString = aSock.remoteAddress().toString();
-		oName = humanReadableName == null || humanReadableName.isBlank()
-				? remoteAddressToString
-				: humanReadableName + ": " + remoteAddressToString;
-
-		oLogger = LoggerFactory.getLogger(oName);
+		oSock.closeHandler(this::onConnectionClosed);
+		oBenchTags = Collections.emptyList();
 		oStatus = Status.IDLE;
+	}
+
+	private synchronized void onConnectionClosed(Void aVoid) {
+		oLogger.error("Websocket disconnected");
+		oStatus = Status.WEBSOCKET_DISCONNECTED;
+		oSock = null;
+		if(oRunId == null) return;
+		DatabaseChangingEventBus.getInstance().push(new DeleteRunEvent(oRunId));
+		oLogger.info(ACTIVE_RUN_QUEUE_DELETION_FMT, oRunId);
+		oRunId = null;
+	}
+
+	public ServerTestRunner(String aHost) {
+		super();
+		oHost = aHost;
+		oStatus = Status.WEBSOCKET_DISCONNECTED;
+		oResolver = Util.testJsonResolver();
+		oLogger = LoggerFactory.getLogger(oHost);
+		oLocalEventBus = ConcurrentEventBus.builder()
+				.addListener(TestRunnerFinishedEvent.class, this::onFinished)
+				.build();
 	}
 
 	private void onFinished(TestRunnerFinishedEvent trf) {
@@ -92,8 +100,7 @@ public class ServerTestRunner implements IResourceAcceptsVisitor {
 			oLogger.info("Started run {} on {}", oRunId, oSock.remoteAddress());
 		} catch (IllegalStateException socketException){
 			oLogger.error("Error when starting test for run {}", oRunId, socketException);
-			oStatus = Status.ERROR;
-			return false;
+			onConnectionClosed(null);
 		}
 		return true;
 	}
@@ -106,39 +113,33 @@ public class ServerTestRunner implements IResourceAcceptsVisitor {
 			oStatus = Status.IDLE;
 		} catch (IllegalStateException socketException){
 			oLogger.error("Error when trying to stop current  test", socketException);
-			oStatus = Status.ERROR;
+			onConnectionClosed(null);
 		}
 
 	}
 
-	@JsonIgnore
 	public List<String> getBenchTags() {
 		return new ArrayList<>(oBenchTags);
 	}
 
-	@JsonIgnore
 	public Status getStatus() {
 		return oStatus;
 	}
 
-	@JsonIgnore
 	public SocketAddress getAddress(){
 		return oSock.remoteAddress();
 	}
 
-	@JsonIgnore
 	public boolean isIdle() {
 		return oStatus.equals(Status.IDLE);
 	}
 
-	@JsonIgnore
 	public Integer getRunId() {
 		return oRunId;
 	}
 
-	@JsonIgnore
-	public String getName() {
-		return oName;
+	public String getHost() {
+		return oHost;
 	}
 
 	//used in debugging to force connection resets when trying to test robustness
@@ -158,5 +159,9 @@ public class ServerTestRunner implements IResourceAcceptsVisitor {
 	@Override
 	public synchronized boolean accept(IResourceVisitor visitor) {
 		return visitor.visit(this);
+	}
+
+	public boolean hasActiveSocket() {
+		return oSock != null;
 	}
 }
