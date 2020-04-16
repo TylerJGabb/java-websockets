@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
@@ -31,8 +32,8 @@ public class TestRunnerConfigurationController {
     public ResponseEntity<String> up() {
         if (oTestExecutor.isUp()) return new ResponseEntity<>("WebSocket is already up", HttpStatus.BAD_REQUEST);
         oTestExecutor.startWebSocket(
-                TestRunnerConfig.getInstance().getServerPort(),
-                TestRunnerConfig.getInstance().getServerHost(),
+                TestRunnerConfig.getInstance().getManagerWebSocketServerPort(),
+                TestRunnerConfig.getInstance().getManagerWebSocketServerHost(),
                 "/");
         return new ResponseEntity<>("good", HttpStatus.OK);
     }
@@ -41,5 +42,11 @@ public class TestRunnerConfigurationController {
     @GetMapping
     public ResponseEntity<Object> getConfig(){
         return new ResponseEntity<>(TestRunnerConfig.getInstance(), HttpStatus.OK);
+    }
+    
+    @CrossOrigin
+    @PutMapping
+    public ResponseEntity<Object> putConfig(@RequestBody TestRunnerConfig.DTO aDto){
+        return new ResponseEntity<>(TestRunnerConfig.getInstance().setFromDto(aDto), HttpStatus.OK);
     }
 }

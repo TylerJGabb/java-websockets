@@ -42,7 +42,6 @@ class MinimalRunnerDashboard extends React.Component{
             <div className="RunnerDashboard" style={{borderStyle: 'dashed'}}>
                 {this.state.failedToConnect ? "CAN NOT FETCH RUNNERS, CONNECTION FAILED" : "RUNNERS:"}
                 {this.state.runners.map(tr => <MinimalRunner key={tr.host} tr={tr}/>)}
-                TODO: Click Runner to go to maintenance portal
             </div>
         );
     }

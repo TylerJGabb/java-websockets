@@ -35,7 +35,7 @@ public class TestExecutor {
 
 	private WebSocket oSocket;
 	private IEventResolver oResolver;
-	private Thread executionThread;
+	private Thread oExecutionThread;
 	private boolean oKeepAlive;
 	private String oUri;
 	private String oHost;
@@ -51,7 +51,7 @@ public class TestExecutor {
 	}
 
 	private void startRun(StartRunEvent sre) {
-		executionThread = new Thread(() -> {
+		oExecutionThread = new Thread(() -> {
 			String finish = System.getProperty("finish");
 			if(!cSendFinishEventToServer) {
 				TEST_RUNNER_APPLICATION_LOGGER.info("cSendFinishEventToServer was true, aborting test, not reporting back");
@@ -77,12 +77,12 @@ public class TestExecutor {
 				th.printStackTrace();
 			}
 		});
-		executionThread.start();
+		oExecutionThread.start();
 	}
 
 	private void stop(StopTestEvent ste) {
 		TEST_RUNNER_APPLICATION_LOGGER.info("RECEIVED StopTestEvent; STOPPING TEST");
-		executionThread.interrupt();
+		oExecutionThread.interrupt();
 
 	}
 
@@ -138,7 +138,7 @@ public class TestExecutor {
 	 */
 	public void stopWebSocket(){
 		oKeepAlive = false;
-		executionThread.interrupt();
+		if (oExecutionThread != null) oExecutionThread.interrupt();
 		if(oSocket != null) oSocket.close();
 	}
 

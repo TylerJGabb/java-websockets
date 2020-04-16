@@ -9,7 +9,7 @@ class MinimalRunner extends React.Component{
 
     upDown(){
         let disconnected = this.props.tr.status === 'WEBSOCKET_DISCONNECTED';
-        let url = `http://localhost:${this.props.tr.portalPort}/api/config/${disconnected ? 'up' : 'down'}`;
+        let url = `http://${this.props.tr.host}:${this.props.tr.portalPort}/api/config/${disconnected ? 'up' : 'down'}`;
         fetch(url, {
             method: 'PUT'
         }).then(response => console.log(response))
@@ -27,9 +27,10 @@ class MinimalRunner extends React.Component{
         }
         const running = this.props.tr.runId ? " RUN: " + this.props.tr.runId : ""
         return (
-            <div className="Runner" style={{background}}>
-                {`Host: ${this.props.tr.host} Status: ${this.props.tr.status}${running}`}
+            <div className="Runner" style={{background, borderStyle: 'solid'}}>
+                <p>{`Host: ${this.props.tr.host} Status: ${this.props.tr.status}${running}`}</p>
                 <button onClick={this.upDown}>{disconnected ? 'Enable' : 'Disable'}</button>
+                <button>Configure</button>
             </div>
         )
     }
