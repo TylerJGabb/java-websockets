@@ -4,16 +4,15 @@ class MinimalRunner extends React.Component{
 
     constructor(props){
         super(props);
-        this.upDown = this.upDown.bind(this);
+        this.toggle = this.toggle.bind(this);
     }
 
-    upDown(){
+    toggle(){
         let disconnected = this.props.tr.status === 'WEBSOCKET_DISCONNECTED';
         let url = `http://${this.props.tr.host}:${this.props.tr.portalPort}/api/config/${disconnected ? 'up' : 'down'}`;
-        fetch(url, {
-            method: 'PUT'
-        }).then(response => console.log(response))
-        .catch(e => alert(e));
+        fetch(url, {method: 'PUT' })
+        .then(console.log)
+        .catch(console.error);
     }
 
 
