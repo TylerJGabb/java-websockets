@@ -1,6 +1,6 @@
 import React from 'react';
 
-class MinimalRunner extends React.Component{
+export default class MinimalRunner extends React.Component{
 
     constructor(props){
         super(props);
@@ -28,12 +28,10 @@ class MinimalRunner extends React.Component{
         return (
             <div className="Runner" style={{background, borderStyle: 'solid'}}>
                 <p>{`Host: ${this.props.tr.host} Status: ${this.props.tr.status}${running}`}</p>
-                <button onClick={this.upDown}>{disconnected ? 'Enable' : 'Disable'}</button>
+                <button onClick={this.toggle}>{disconnected ? 'Enable' : 'Disable'}</button>
                 <button>Configure</button>
             </div>
         )
     }
 
 }
-
-export default MinimalRunner;
