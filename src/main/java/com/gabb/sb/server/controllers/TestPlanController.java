@@ -44,6 +44,7 @@ public class TestPlanController {
         return new ResponseEntity<>(planRepo.findById(id), HttpStatus.OK);
     }
 
+    @CrossOrigin
     @PostMapping
     private ResponseEntity<Integer> post(@RequestBody TestPlanPostDTO body) throws JsonProcessingException {
         Integer id = planRepo.save(new TestPlan(body)).getId();

@@ -1,5 +1,6 @@
 import React from 'react';
-import MinimalRunnerDashboard from './MinimalRunnerDashboard'
+import MinimalRunnerDashboard from './MinimalRunnerDashboard';
+import SubmitTestPlan from './SubmitTestPlan';
 //https://reacttraining.com/react-router/web/example/basic
 import {
   BrowserRouter as Router,
@@ -26,8 +27,8 @@ class App extends React.Component {
               <p>
                 Use the links provided in the header.
               </p>
+              <h2>Updates:</h2>
               <p>
-                <h2>Updates:</h2>
                 Some text goes here that explains recent updates, issues, fixes, workarounds
               </p>
             </Route>
@@ -35,7 +36,7 @@ class App extends React.Component {
               <MinimalRunnerDashboard />
             </Route>
             <Route exact path="/submitTestPlan">
-              TODO: Add form allowing submission of test plan
+              <SubmitTestPlan />
             </Route>
             <Route exact path="/testPlanStatus">
               TODO: Show active and completed plans, with percent complete, allow sorting/searching
